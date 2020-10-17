@@ -1,0 +1,12 @@
+#!/bin/bash
+if [ $# -ne 1 ]; then
+    echo "Usage: `basename $0` JobID"
+    exit 1
+fi
+JOBID=$1
+SLURM_USER=$(get-slurm-user $JOBID)
+SLURM_SCRIPT=$(get-slurm-script $JOBID)
+echo $SLURM_USER
+echo $SLURM_SCRIPT
+echo
+sudo su - $SLURM_USER -c "cat $SLURM_SCRIPT"

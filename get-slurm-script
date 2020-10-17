@@ -1,0 +1,6 @@
+#!/bin/bash
+if [ $# -ne 1 ]; then
+    echo "Usage: `basename $0` JobID"
+    exit 1
+fi
+scontrol show job $1 | awk -F= '/Command/ {print $2}'

@@ -6,6 +6,11 @@ Miscellaneous scripts for Rivanna
 - `list-group-usage` - List SU usage for each group member
 - `list-storage` - List storage usage by school and department
 
+## SLURM
+- `get-slurm-user` - Given job ID find user
+- `get-slurm-script` - Given job ID find location of SLURM script
+- `show-slurm-script` - Given job ID show SLURM script
+
 ## Groups
 - `group-compare` - Compare members of a group with MyGroups `group.txt` and show discrepancies
 - `group-intersect` - Intersection of two groups on Rivanna
