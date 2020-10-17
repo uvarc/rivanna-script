@@ -1,0 +1,51 @@
+#!/bin/bash
+#
+# find intersection of two groups
+# Ruoshi Sun 2019-12-10
+#
+
+VERBOSE=false
+
+while getopts ":hv" opt; do
+    case $opt in
+    h) 
+        echo "Usage: `basename $0` [-v] GROUP1 GROUP2"
+        echo "-v   verbose"
+        exit
+        ;;
+    v) 
+        VERBOSE=true
+        shift
+        ;;
+    \?)
+        echo "Unknown option"
+        exit 1
+        ;;
+    esac
+done
+
+G1=$1
+G2=$2
+users1=(`getent group $G1|sed 's/^.*://' | tr ',' ' '`)
+users2=(`getent group $G2|sed 's/^.*://' | tr ',' ' '`)
+
+if $VERBOSE; then
+    echo "$G1 (${#users1[*]}):"
+    echo ${users1[@]}
+    echo
+    echo "$G2 (${#users2[*]}):"
+    echo ${users2[@]}
+    echo
+fi
+
+tmp=" ${users2[*]} " 
+for i in ${users1[@]}; do
+    if [[ $tmp =~ " $i " ]] ; then
+        intersect+=($i)
+    fi
+done
+
+if $VERBOSE; then
+    echo -e "$G1 \u2229 $G2 (${#intersect[*]}):"
+fi
+echo ${intersect[@]}

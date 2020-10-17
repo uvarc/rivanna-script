@@ -1,0 +1,81 @@
+#!/bin/bash
+# find latest python packages
+#
+# Ruoshi Sun
+# 2020-08-14
+
+if [[ $# -lt 2 || $# -gt 4 ]]; then
+    echo "Usage: `basename $0` c[onda] \"CHANNELS_LIST\" \"PACKAGES_LIST\" [eb]"
+    echo "       `basename $0` p[ip]   \"PACKAGES_LIST\" [eb]"
+    echo "Adding \"eb\" as the last argument will print the result in easyconfig format."
+    exit 1
+fi
+
+EB=false
+MANAGER=$1
+
+if [[ $MANAGER =~ ^c ]]; then
+    CHANNELS="$2"
+    PACKAGES="$3"
+    if [ $# -eq 4 ]; then
+        EB=true
+    fi
+elif [[ $MANAGER =~ ^p ]]; then
+    PACKAGES="$2"
+    if [ $# -eq 3 ]; then
+        EB=true
+    fi
+else
+    echo "Invalid package manager $MANAGER"
+    exit 1
+fi
+
+# sort packages
+PACKAGES_SORTED=$(echo "$PACKAGES" | tr ' ' '\n' | sort | tr '\n' ' ')
+
+function search_conda {
+    CONDA_CMD_PREFIX="conda search"
+    for c in $CHANNELS; do
+        CONDA_CMD_PREFIX+=" -c $c"
+    done
+
+    for i in $PACKAGES_SORTED; do
+        CONDA_CMD="$CONDA_CMD_PREFIX -f $i"
+        if [ "$EB" = "true" ]; then
+            eval $CONDA_CMD | tail -1 | awk '{printf "requirements += \"%s=%s \"\n", $1, $2}'
+        else
+            eval $CONDA_CMD | tail -1
+        fi
+    done
+}
+
+function search_pip {
+    TMP=$(mktemp)
+    for i in $PACKAGES_SORTED; do
+        if [ "$EB" = "true" ]; then
+            pip search $i | tail -n +1 | awk '{
+                if(NR==1) {
+                    gsub(/[()]/,"")
+                    printf "requirements += \"%s==%s \"\n", $1, $2
+                }
+            }'
+        else
+            pip search $i >$TMP
+            awk -v i=$i '{
+                if ($1==i) {
+                    gsub(/[()]/,"")
+                    printf "%s==%s\n", $1, $2
+                    exit
+                }
+            }' $TMP
+        fi
+    done
+}
+
+module load anaconda/2019.10-py3.7
+
+if [[ $MANAGER =~ ^c ]]; then
+    search_conda $PACKAGES_SORTED
+else
+    search_pip $PACKAGES_SORTED
+fi

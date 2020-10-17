@@ -1,0 +1,8 @@
+#!/bin/bash
+if [ $# -ne 1 ]; then
+    echo "Usage: `basename $0` user"
+    exit 1
+fi
+USERNAME=$1
+curl -s http://admin.storage.virginia.edu/filesplus/group.txt | \
+awk -F':' -v pattern="^ivy.*$USERNAME" '$0 ~ pattern {print $1}'

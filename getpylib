@@ -1,0 +1,44 @@
+#!/bin/bash
+# find dynamic libraries needed by python packages
+#
+# Ruoshi Sun
+# 2020-09-09
+
+if [ $# -lt 2 ]; then
+    echo "Usage: `basename $0` image /path/to/site-packages [python_cmd]"
+    exit 1
+fi
+IMG=$1
+DIR=$2
+PYTHON="python"
+
+if [ $# -eq 3 ]; then
+    PYTHON=$3
+fi
+
+# python module list
+MODULES=($(docker run --rm $IMG ls -1 $DIR | \
+    grep -vE "dist-info|^_|\.|README"))
+
+BEFORE=$(mktemp)
+AFTER=$(mktemp)
+ALL=$(mktemp)
+echo "Before: $BEFORE"
+echo "After: $AFTER"
+echo "All: $ALL"
+
+docker run --rm $IMG $PYTHON -c "import os; pid=os.getpid(); os.system('lsof -p %d -Fn' % pid)" | \
+    sed -n 's/^n//p' >$BEFORE
+
+N=${#MODULES[@]}
+for i in "${!MODULES[@]}"; do
+    echo "${MODULES[$i]} ($((i+1))/$N)"
+    docker run --rm $IMG $PYTHON -c "import os; pid=os.getpid(); import ${MODULES[$i]}; os.system('lsof -p %d -Fn' % pid)" | \
+        sed -n 's/^n//p' >$AFTER
+    diff $BEFORE $AFTER | sed -n 's/^> //p' >>$ALL
+    #echo
+done
+
+awk '{print $1}' $ALL|sort|uniq
+
+rm $BEFORE $AFTER $ALL

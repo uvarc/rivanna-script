@@ -1,0 +1,22 @@
+#!/bin/bash
+if [ $# -ne 2 ]; then
+    echo "Usage: `basename $0` image \"app [app2 ...]\""
+    exit 1
+fi
+
+IMG=$1
+APP=$2
+TMP=$(mktemp)
+
+echo $TMP
+
+for i in "$APP"; do
+    docker run --rm --entrypoint bash $IMG ldd $i | awk '{
+        if (NF<3)
+            printf "%s\n", $1
+        else
+            printf "%s\n", $3
+    }' | sort
+done >>$TMP
+
+sort $TMP | uniq

@@ -1,0 +1,83 @@
+#!/bin/bash
+
+total_size=0
+total_used=0
+
+TMP=$(mktemp)
+echo $TMP
+LOG=storage.log
+
+while read -r line; do
+    USERNAME=`echo $line|awk -F: '{print $8}'`
+    PROJECT=`echo $line|awk -F: '{print $9}'`
+
+    if [ ! -e /project/$PROJECT ]; then
+        continue
+    fi
+
+    SCHOOL_DEPT=`ldapsearch -x -LLL -h ldap.virginia.edu -b "o=University of Virginia,c=US" uid=$USERNAME uvaDisplayDepartment | sed -n '2 s/^uvaDisplayDepartment: [^:]*://p' | tr ' ' '_'`
+
+    if [[ "$SCHOOL_DEPT" =~ "-" ]]; then
+        SCHOOL=${SCHOOL_DEPT%-*}
+        DEPT=${SCHOOL_DEPT##*-}
+    elif [[ "$SCHOOL_DEPT" =~ "Data Science" ]]; then
+        SCHOOL="DS"
+        DEPT="Data_Science_School"
+    fi
+
+    printf "%25s" $PROJECT
+
+    df -h /project/$PROJECT | awk '
+    function parse_size(input) {
+        if (input ~ /G/) {
+            gsub(/[^.0-9]+/, "", input)
+            return input/1024
+        }
+        else if (input ~ /M/) {
+            gsub(/[^.0-9]+/, "", input)
+            return input/1024**2
+        }
+        else if (input ~ /K/) {
+            gsub(/[^.0-9]+/, "", input)
+            return input/1024**3
+        }
+        else {
+            gsub(/[^.0-9]+/, "", input)
+            return input
+        }
+    } {
+        if (NR==2) {
+            size=parse_size($2)
+            used=parse_size($3)
+            printf "%10.4f %10.4f ",size,used
+        }
+    }'
+    printf "%10s %s\n" $SCHOOL $DEPT
+done < /nv/vol188/dtn/qumulo-list >> $TMP
+
+awk '{
+    size+=$2
+    used+=$3
+} END {print size,used,used/size*100}' $TMP
+
+sort -k4 $TMP >$LOG
+exit
+
+# 3: nas/home1/sammas
+# 4: size
+# 5: used
+# 6: OS
+# 8: owner
+# 9: group
+
+for i in /nv/vol188/dtn/qumulo-list; do
+    if [[ "$i" =~ "volume" ]]; then
+        IN=$(mktemp)
+        head -1 $i >$IN
+        grep "nas.storage" $i >>$IN
+    else
+        IN=$i
+    fi
+
+    echo $i
+done

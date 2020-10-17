@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+# find who's online in a given group
+#
+
+HEADS=`echo rivanna{1,2,3}`
+
+if [ "$1" == "-h" ] ; then
+    echo "Usage: `basename $0` [-h] [group]"
+    exit 0
+fi
+
+if [ $# -eq 0 ]; then
+    group="hpc_build"
+else
+    group=$1
+fi
+
+users=`getent group $group` 
+
+if [ -z $users ]; then
+    echo "Unknown group: $group"
+    exit 1
+fi
+
+for i in $HEADS; do
+    echo "$i"
+    search=`echo $users | sed 's/^.*://' | tr ',' '|'`
+    ssh $i.hpc.virginia.edu "who" | grep -E "$search"
+    echo
+done

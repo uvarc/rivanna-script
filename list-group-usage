@@ -1,0 +1,64 @@
+#!/bin/bash
+# generate SU usage report from mam-statement and mam-list-transactions
+
+# check if mam- commands exist
+for i in mam-statement mam-list-transactions; do
+    if ! command -v $i &> /dev/null; then
+        echo "Error: command $i not found"
+        exit 1
+    fi
+done
+
+print_usage() {
+    echo "Usage: `basename $0` -A ALLOCATION [-S START] [-E END]"
+    echo
+    echo "-A   Allocation name (mandatory)"
+    echo "-S   Start date YYYY-MM-DD (optional; default: beginning of month)"
+    echo "-E   End   date YYYY-MM-DD (optional; default: current)"
+}
+
+# parse arguments
+if [ $# -eq 0 ]; then
+    print_usage
+    exit 1
+fi
+
+while getopts ':A:S:E:' opt; do
+    case "${opt}" in
+        A ) ALLOCATION=$OPTARG;;
+        S ) START=$OPTARG;;
+        E ) END=$OPTARG;;
+        : ) echo "Missing option argument for -$OPTARG" >&2
+            print_usage
+            exit 1;;
+        * ) echo "Unknown option: -$OPTARG" >&2
+            print_usage
+            exit 1;;
+    esac
+done
+
+if [ -z "$START" ]; then
+    START=$(date "+%Y-%m-01")
+fi
+
+STATEMENT_CMD="mam-statement --summarize -a $ALLOCATION -s $START"
+LIST_CMD="mam-list-transactions -a $ALLOCATION -A Charge --show \"GroupBy(User),Count(User),Sum(Amount)\" -s $START"
+
+if [ ! -z "$END" ]; then
+    STATEMENT_CMD+=" -e $END"
+    LIST_CMD+=" -e $END"
+fi
+
+# header info and balance
+eval $STATEMENT_CMD | awk '{if(NR<=9 || NR==14) print}'
+
+echo 
+echo "############################### Debit Summary ##################################"
+echo
+echo "User   Jobs   SUs"
+echo "------ ------ ---------"
+
+eval $LIST_CMD | tail -n +3
+
+echo 
+echo "############################### End of Report ##################################"

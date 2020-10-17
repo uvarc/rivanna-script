@@ -1,0 +1,30 @@
+#!/bin/bash
+# Ruoshi Sun
+# 2020-01-24
+#
+# compare group member with MyGroups
+
+GROUP="http://admin.storage.virginia.edu/filesplus/group.txt"
+
+for g in $@; do
+    echo ["$g"]
+    users1=(`curl -s $GROUP | grep "^$g:" | sed 's/^.*://' | tr ',' ' '`)
+    users2=(`getent group $g|sed 's/^.*://' | tr ',' ' '`)
+
+    echo "group.txt (${#users1[*]}):"
+    echo ${users1[@]}
+    echo "rivanna (${#users2[*]}):"
+    echo ${users2[@]}
+
+    tmp=" ${users2[*]} " 
+    for i in ${users1[@]}; do
+        if [[ ! $tmp =~ " $i " ]] ; then
+            not_added+=($i)
+        fi
+    done
+
+    echo "not yet added (${#not_added[*]}):"
+    echo ${not_added[@]}
+    echo
+    unset users1 users2 tmp not_added
+done
