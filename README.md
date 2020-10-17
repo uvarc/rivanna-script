@@ -12,12 +12,13 @@ Miscellaneous scripts for Rivanna
 - `show-slurm-script` - Given job ID show SLURM script
 
 ## Groups
+- `get-ivygroup` - Find which Ivy groups a user belongs to
 - `group-compare` - Compare members of a group with MyGroups `group.txt` and show discrepancies
 - `group-intersect` - Intersection of two groups on Rivanna
-- `get-ivygroup` - Find which Ivy groups a user belongs to
 - `whogrp` - For each group member show who's logged on to which frontend
 
 ## Libraries/Packages
-- `getlib` - Find library dependencies of binaries
-- `getpylib` - Find library dependencies of Python packages
+- `getlib` - Find library dependencies of binaries (Docker)
+- `getpylib` - Find library dependencies of Python packages (Docker)
 - `pypkgver` - Find latest version of Python packages via conda or pip
+- `syslib` - Multi-search installed system libraries
