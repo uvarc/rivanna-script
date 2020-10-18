@@ -7,9 +7,7 @@ Miscellaneous scripts for Rivanna
 - `list-storage` - List storage usage by school and department
 
 ## SLURM
-- `get-slurm-user` - Given job ID find user
-- `get-slurm-script` - Given job ID find location of SLURM script
-- `show-slurm-script` - Given job ID show SLURM script
+- `show-slurmscript` - Given job ID show SLURM script
 
 ## Groups
 - `get-ivygroup` - Find which Ivy groups a user belongs to
@@ -18,7 +16,7 @@ Miscellaneous scripts for Rivanna
 - `whogrp` - For each group member show who's logged on to which frontend
 
 ## Libraries/Packages
-- `getlib` - Find library dependencies of binaries (Docker)
-- `getpylib` - Find library dependencies of Python packages (Docker)
+- `getlib` - Find library dependencies of binaries (Docker multistage build)
+- `getpylib` - Find library dependencies of Python packages (Docker multistage build)
 - `pypkgver` - Find latest version of Python packages via conda or pip
 - `syslib` - Multi-search installed system libraries

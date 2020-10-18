@@ -1,0 +1,45 @@
+#!/bin/bash
+if [ $# -ne 1 ]; then
+    echo "Usage: `basename $0` JobID"
+    exit 1
+fi
+JOBID=$1
+#TMP=$(mktemp)
+TMP=tmp
+
+#scontrol show job $1 >$TMP
+if [ $? -ne 0 ]; then
+    echo "$JOBID is not an active job"
+    rm $TMP
+    exit 1
+fi
+
+USERNAME=$(sed -n 's/^\s*UserId=\([a-z0-9]*\)(.*$/\1/p' $TMP)
+
+# Need to include such cases:
+#                                                           *             
+#   Command=/.../seperated codes/code/test_county_extraction/get_region_bipartite_graph.sbatch 22033 08_30
+#   WorkDir=/.../seperated codes/code/test_county_extraction
+#
+# escape space -> can't use back tick
+# argument in Command -> print WorkDir then first argument starting from * in Command
+
+DIR=$(awk -F= '/WorkDir/ {gsub(/ /, "\\ "); print $2}' $TMP)
+COMMAND=$(awk -F= '/Command/ {print $2}' $TMP)
+
+nchar=${#DIR}
+SCRIPT=$(echo "${COMMAND:$nchar}" | awk '{print $1}')
+
+echo $USERNAME
+echo "$DIR"
+
+if [ "$SCRIPT" = "(null)" ]; then
+    JOBNAME=`awk -F= '/JobName/ {print $3}' $TMP`
+    echo "No slurm script for job \"$JOBNAME\""
+else
+    echo $SCRIPT
+    echo
+    sudo su - $USERNAME -c "cat $DIR/$SCRIPT"
+fi
+
+#rm $TMP
