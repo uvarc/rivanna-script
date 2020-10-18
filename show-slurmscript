@@ -15,31 +15,37 @@ fi
 
 USERNAME=$(sed -n 's/^\s*UserId=\([a-z0-9]*\)(.*$/\1/p' $TMP)
 
-# Need to include such cases:
+# Need to take into account of such cases:
 #                                                           *             
 #   Command=/.../seperated codes/code/test_county_extraction/get_region_bipartite_graph.sbatch 22033 08_30
 #   WorkDir=/.../seperated codes/code/test_county_extraction
 #
-# escape space -> can't use back tick
-# argument in Command -> print WorkDir then first argument starting from * in Command
+# Escape space -> can't use back tick
+# Argument in Command -> print WorkDir then first argument starting from * in Command
+#
+# Have not considered spaces in file name
 
 DIRRAW=$(awk -F= '/WorkDir/ {print $2}' $TMP)
 DIR=$(echo $DIRRAW | awk '{gsub(/ /, "\\ "); print}')
 COMMAND=$(awk -F= '/Command/ {print $2}' $TMP)
 
-nchar=${#DIRRAW}
-SCRIPT=$(echo "${COMMAND:$nchar}" | awk '{print $1}')
-
 echo $USERNAME
 echo "$DIR"
 
-if [ "$SCRIPT" = "(null)" ]; then
-    JOBNAME=`awk -F= '/JobName/ {print $3}' $TMP`
+if [ "$COMMAND" = "(null)" ]; then
+    JOBNAME=$(awk -F= '/JobName/ {print $3}' $TMP)
     echo "No slurm script for job \"$JOBNAME\""
-else
-    echo $DIR$SCRIPT
-    echo
-    sudo su - $USERNAME -c "cat $DIR$SCRIPT"
+    exit
+fi
+
+nchar=${#DIRRAW}
+SCRIPT=$(echo "${COMMAND:$nchar}" | awk '{print $1}')
+
+echo "$DIR$SCRIPT"
+echo
+sudo su - $USERNAME -c "cat $DIR$SCRIPT" 2>/dev/null
+if [ $? -ne 0 ]; then
+    echo "Slurm script not found. Possibly deleted or renamed."
 fi
 
 rm $TMP
