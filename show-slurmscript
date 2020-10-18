@@ -4,10 +4,9 @@ if [ $# -ne 1 ]; then
     exit 1
 fi
 JOBID=$1
-#TMP=$(mktemp)
-TMP=tmp
+TMP=$(mktemp)
 
-#scontrol show job $1 >$TMP
+scontrol show job $1 >$TMP
 if [ $? -ne 0 ]; then
     echo "$JOBID is not an active job"
     rm $TMP
@@ -24,10 +23,11 @@ USERNAME=$(sed -n 's/^\s*UserId=\([a-z0-9]*\)(.*$/\1/p' $TMP)
 # escape space -> can't use back tick
 # argument in Command -> print WorkDir then first argument starting from * in Command
 
-DIR=$(awk -F= '/WorkDir/ {gsub(/ /, "\\ "); print $2}' $TMP)
+DIRRAW=$(awk -F= '/WorkDir/ {print $2}' $TMP)
+DIR=$(echo $DIRRAW | awk '{gsub(/ /, "\\ "); print}')
 COMMAND=$(awk -F= '/Command/ {print $2}' $TMP)
 
-nchar=${#DIR}
+nchar=${#DIRRAW}
 SCRIPT=$(echo "${COMMAND:$nchar}" | awk '{print $1}')
 
 echo $USERNAME
@@ -37,9 +37,9 @@ if [ "$SCRIPT" = "(null)" ]; then
     JOBNAME=`awk -F= '/JobName/ {print $3}' $TMP`
     echo "No slurm script for job \"$JOBNAME\""
 else
-    echo $SCRIPT
+    echo $DIR$SCRIPT
     echo
-    sudo su - $USERNAME -c "cat $DIR/$SCRIPT"
+    sudo su - $USERNAME -c "cat $DIR$SCRIPT"
 fi
 
-#rm $TMP
+rm $TMP
