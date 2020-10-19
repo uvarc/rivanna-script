@@ -109,10 +109,10 @@ for i in ${!IN[@]}; do
         done
     } < ${IN[$i]} >> $TMP
 done
-
 rm $TMPLDAP
 
 sort -k1 $TMP >>$LOG
+cat $LOG
 
 awk '{
     size+=$6
@@ -121,5 +121,4 @@ awk '{
     printf "Total size: %.4f TB\n", size
     printf "Total used: %.4f TB (%.4f%%)\n", used, used/size*100
 }' $TMP
-
 rm $TMP
