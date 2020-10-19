@@ -1,83 +1,116 @@
 #!/bin/bash
 
+function parse_ldap {
+    FIELD=$1
+    FILE=$2
+    if [ "$FIELD" = "displayName" ]; then
+        sed -n "s/^$FIELD: //p" $FILE | tr ' ' '_'
+    elif [ "$FIELD" = "uvaDisplayDepartment" ]; then
+        sed -n "s/^$FIELD: [^:]*://p" $FILE | tail -1 | tr ' ' '_'
+    else
+        echo "Unknown field $FIELD"
+        exit 1
+    fi
+}
+
 total_size=0
 total_used=0
 
 TMP=$(mktemp)
 echo $TMP
+TMPLDAP=$(mktemp)
 LOG=storage.log
 
-while read -r line; do
-    USERNAME=`echo $line|awk -F: '{print $8}'`
-    PROJECT=`echo $line|awk -F: '{print $9}'`
+IN=/nv/vol188/dtn/qumulo-list
 
-    if [ ! -e /project/$PROJECT ]; then
-        continue
-    fi
+printf "%-10s %-40s %-8s %-35s %-25s %-10s %-10s\n" School Department Username Name Volume "Size (TB)" "Used (TB)" >$LOG
+printf "%0.s-" {1..144} >>$LOG
+echo >>$LOG
 
-    SCHOOL_DEPT=`ldapsearch -x -LLL -h ldap.virginia.edu -b "o=University of Virginia,c=US" uid=$USERNAME uvaDisplayDepartment | sed -n '2 s/^uvaDisplayDepartment: [^:]*://p' | tr ' ' '_'`
+{
+# skip first line
+    read
+    while read -r line; do
+        USERNAME=`echo $line|awk -F: '{print $8}'`
+        VOLUME=`echo $line|awk -F: '{print $1}'`
 
-    if [[ "$SCHOOL_DEPT" =~ "-" ]]; then
-        SCHOOL=${SCHOOL_DEPT%-*}
-        DEPT=${SCHOOL_DEPT##*-}
-    elif [[ "$SCHOOL_DEPT" =~ "Data Science" ]]; then
-        SCHOOL="DS"
-        DEPT="Data_Science_School"
-    fi
+        if [ ! -e /project/$VOLUME ]; then
+            continue
+        fi
 
-    printf "%25s" $PROJECT
+# skip instructional
+        RAWSIZE=$(echo $line|awk -F: '{print $4}')
+        if [[ "$RAWSIZE" == "50GB" || "$RAWSIZE" == "10GB" ]]; then
+            continue
+        fi
 
-    df -h /project/$PROJECT | awk '
-    function parse_size(input) {
-        if (input ~ /G/) {
-            gsub(/[^.0-9]+/, "", input)
-            return input/1024
-        }
-        else if (input ~ /M/) {
-            gsub(/[^.0-9]+/, "", input)
-            return input/1024**2
-        }
-        else if (input ~ /K/) {
-            gsub(/[^.0-9]+/, "", input)
-            return input/1024**3
-        }
-        else {
-            gsub(/[^.0-9]+/, "", input)
-            return input
-        }
-    } {
-        if (NR==2) {
-            size=parse_size($2)
-            used=parse_size($3)
-            printf "%10.4f %10.4f ",size,used
-        }
-    }'
-    printf "%10s %s\n" $SCHOOL $DEPT
-done < /nv/vol188/dtn/qumulo-list >> $TMP
+        ldapsearch -x -LLL -h ldap.virginia.edu -b "o=University of Virginia,c=US" uid=$USERNAME >$TMPLDAP
+        NAME=$(parse_ldap displayName $TMPLDAP)
+        SCHOOL_DEPT=$(parse_ldap uvaDisplayDepartment $TMPLDAP)
+
+# deal with school & department
+        if [[ "$SCHOOL_DEPT" =~ "-" ]]; then
+            SCHOOL=${SCHOOL_DEPT%-*}
+            DEPT=${SCHOOL_DEPT##*-}
+        elif [[ "$SCHOOL_DEPT" =~ "Data_Science" ]]; then
+            SCHOOL="DS"
+            DEPT="Data_Science_School"
+        elif [[ "$SCHOOL_DEPT" =~ "Arts_&_Sciences_Graduate" ]]; then
+            SCHOOL="AS"
+            DEPT="idk"
+        elif [[ "$SCHOOL_DEPT" =~ "Engineering_Graduate" ]]; then
+            SCHOOL="EN"
+            DEPT="idk"
+        elif [[ "$SCHOOL_DEPT" =~ "Medicine" ]]; then
+            SCHOOL="MD"
+            DEPT="idk"
+        else
+            >&2 echo "$USERNAME $SCHOOL_DEPT"
+            SCHOOL="idk"
+            DEPT="idk"
+        fi
+
+        printf "%-10s %-40s %-8s %-35s %-25s" $SCHOOL $DEPT $USERNAME $NAME $VOLUME
+
+        df -h /project/$VOLUME | awk '
+        function parse_size(input) {
+            if (input ~ /G/) {
+                gsub(/[^.0-9]+/, "", input)
+                return input/1024
+            }
+            else if (input ~ /M/) {
+                gsub(/[^.0-9]+/, "", input)
+                return input/1024**2
+            }
+            else if (input ~ /K/) {
+                gsub(/[^.0-9]+/, "", input)
+                return input/1024**3
+            }
+            else {
+                gsub(/[^.0-9]+/, "", input)
+                return input
+            }
+        } {
+            if (NR==2) {
+                size=parse_size($2)
+                used=parse_size($3)
+                printf "%10.4f %10.4f\n",size,used
+            }
+        }'
+    done
+} < $IN >> $TMP
+#} < <(head -10 $IN) >> $TMP
+
+rm $TMPLDAP
+
+sort -k1 $TMP >>$LOG
 
 awk '{
-    size+=$2
-    used+=$3
-} END {print size,used,used/size*100}' $TMP
+    size+=$6
+    used+=$7
+} END {
+    printf "Total size: %.4f TB\n", size
+    printf "Total used: %.4f TB (%.4f%%)\n", used, used/size*100
+}' $TMP
 
-sort -k4 $TMP >$LOG
-exit
-
-# 3: nas/home1/sammas
-# 4: size
-# 5: used
-# 6: OS
-# 8: owner
-# 9: group
-
-for i in /nv/vol188/dtn/qumulo-list; do
-    if [[ "$i" =~ "volume" ]]; then
-        IN=$(mktemp)
-        head -1 $i >$IN
-        grep "nas.storage" $i >>$IN
-    else
-        IN=$i
-    fi
-
-    echo $i
-done
+rm $TMP
