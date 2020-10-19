@@ -1,27 +1,50 @@
 #!/bin/bash
 if [ $# -ne 1 ]; then
-    echo "Usage: `basename $0` group"
+    echo "Usage: `basename $0` user|group"
     exit 1
 fi
 
 function parse_ldap {
-    FIELD=$1
-    FILE=$2
-    sed -n "s/^$FIELD: //p" $FILE
+    TMP=$(mktemp)
+    RESULT=""
+    ldapsearch -x -LLL -h ldap.virginia.edu -b "o=University of Virginia,c=US" uid=$1 >$TMP
+
+    for FIELD in displayName uvaPersonIAMAffiliation; do
+        STRING=$(sed -n "s/^$FIELD: //p" $TMP)
+        if [ "$2" = "group" ]; then
+            if [[ "$STRING" =~ "student" ]]; then
+                rm $TMP
+                return
+            fi
+        fi
+        RESULT+=" $STRING"
+    done
+    echo "$1 $RESULT"
 }
 
-GROUP=$1
-USERS=( $(getent group $GROUP | sed 's/^.*://' | tr ',' ' ') )
-TMP=$(mktemp)
+ARG=$1
+ID=$(id $ARG 2>/dev/null)
 
-echo "Potential PIs for $GROUP:"
-for USERNAME in ${USERS[@]}; do
-    ldapsearch -x -LLL -h ldap.virginia.edu -b "o=University of Virginia,c=US" uid=$USERNAME >$TMP
-    NAME="$(parse_ldap displayName $TMP)"
-    TITLE="$(parse_ldap uvaPersonIAMAffiliation $TMP)"
-    if [[ ! "$TITLE" =~ "student" ]]; then
-        echo "$USERNAME $NAME $TITLE"
+echo "Potential PIs for $ARG:"
+
+if [ ! -z "$ID" ]; then
+# search user
+    USERNAME=$ARG
+    ALLOCATIONS=( $(sudo su - $USERNAME -c "allocations" | awk '{if(NR>2) print $1}') )
+    for i in $ALLOCATIONS; do
+        PI_USERNAME=$(sudo su - $USERNAME -c "mam-list-accounts -a $i" | tail -1 | sed 's/^.*\^\([^,\s]*\)[,\s].*$/\1/')
+        parse_ldap $PI_USERNAME
+    done
+else
+    GROUP=$(getent group $ARG)
+    if [ ! -z "$GROUP" ]; then
+# search group
+        USERS=( $(echo $GROUP | sed 's/^.*://' | tr ',' ' ') )
+
+        for USERNAME in ${USERS[@]}; do
+            parse_ldap $USERNAME group
+        done
+    else
+        echo "Cannot find user or group for $ARG"
     fi
-done
-
-rm $TMP
+fi
