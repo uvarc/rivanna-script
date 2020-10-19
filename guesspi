@@ -1,0 +1,27 @@
+#!/bin/bash
+if [ $# -ne 1 ]; then
+    echo "Usage: `basename $0` group"
+    exit 1
+fi
+
+function parse_ldap {
+    FIELD=$1
+    FILE=$2
+    sed -n "s/^$FIELD: //p" $FILE
+}
+
+GROUP=$1
+USERS=( $(getent group $GROUP | sed 's/^.*://' | tr ',' ' ') )
+TMP=$(mktemp)
+
+echo "Potential PIs for $GROUP:"
+for USERNAME in ${USERS[@]}; do
+    ldapsearch -x -LLL -h ldap.virginia.edu -b "o=University of Virginia,c=US" uid=$USERNAME >$TMP
+    NAME="$(parse_ldap displayName $TMP)"
+    TITLE="$(parse_ldap uvaPersonIAMAffiliation $TMP)"
+    if [[ ! "$TITLE" =~ "student" ]]; then
+        echo "$USERNAME $NAME $TITLE"
+    fi
+done
+
+rm $TMP

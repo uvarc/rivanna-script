@@ -62,9 +62,9 @@ for i in ${!IN[@]}; do
                 continue
             fi
 
-# skip instructional
-            RAWSIZE=$(echo $line|awk -F: '{print $4}')
-            if [[ "$RAWSIZE" == "50GB" || "$RAWSIZE" == "10GB" ]]; then
+# skip instructional (assume smaller than 1 TB)
+            RAWSIZE=$(df /$DIR/$VOLUME | awk '{if(NR==2) print $2}')
+            if [ "$RAWSIZE" -lt "1000000000" ]; then
                 continue
             fi
 

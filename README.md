@@ -13,6 +13,7 @@ Miscellaneous scripts for Rivanna
 - `get-ivygroup` - Find which Ivy groups a user belongs to
 - `group-compare` - Compare members of a group with MyGroups `group.txt` and show discrepancies
 - `group-intersect` - Intersection of two groups on Rivanna
+- `guesspi` - Guess the PI of a group
 - `whogrp` - For each group member show who's logged on to which frontend
 
 ## Libraries/Packages
