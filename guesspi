@@ -19,10 +19,11 @@ function parse_ldap {
         fi
         RESULT+=" $STRING"
     done
-    echo "$1 $RESULT"
+    echo -n "$1 $RESULT"
 }
 
 ARG=$1
+PGPASSWORD=`cat /project/arcs/rc_scripts/PGPASSWORD`
 ID=$(id $ARG 2>/dev/null)
 
 echo "Potential PIs for $ARG:"
@@ -30,10 +31,12 @@ echo "Potential PIs for $ARG:"
 if [ ! -z "$ID" ]; then
 # search user
     USERNAME=$ARG
-    ALLOCATIONS=( $(sudo su - $USERNAME -c "allocations" | awk '{if(NR>2) print $1}') )
+    ALLOCATIONS=( $(sudo /opt/mam/current/bin/mam-balance -u $USERNAME | awk '{if(NR>2) print $2}') )
     for i in ${ALLOCATIONS[@]}; do
-        PI_USERNAME=$(sudo su - $USERNAME -c "mam-list-accounts -a $i" | tail -1 | sed 's/^.*\^\([^,\s]*\)[,\s].*$/\1/')
+        #PI_USERNAME=$(sudo su - $USERNAME -c "mam-list-accounts -a $i" | tail -1 | sed 's/^.*\^\([^,\s]*\)[,\s].*$/\1/')
+        PI_USERNAME=$(PGPASSWORD=$PGPASSWORD psql -t -h scheduler -U mamreadonly -d mam -c "select ga.g_name,gu.g_name,ga.g_organization,go.g_description,ga.g_description from g_account ga join g_organization go on ga.g_organization=go.g_name join g_account_user gu on ga.g_name=gu.g_account where gu.g_admin='True' and ga.g_active='True' and ga.g_name='$i'" | awk -F'|' '{print $2}')
         parse_ldap $PI_USERNAME
+        echo " ($i)"
     done
 else
     GROUP=$(getent group $ARG)
