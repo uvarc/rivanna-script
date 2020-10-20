@@ -5,61 +5,87 @@
 # ----------
 # if argument is user:
 #   for each allocation:
-#     print PI  # PI is unique per allocation
-# else if argument is group:
-#   for each member:
-#     if ldap uvaPersonIAMAffiliation does not contain "student":
-#       print   # possibly multiple matches in a group
+#     print PI    # PI is unique per allocation
+# else:
+#   if argument is allocation group:
+#     print PI    # PI is unique
+#   else if argument is group:
+#     for each member:
+#       if ldap uvaPersonIAMAffiliation does not contain "student":
+#         print   # possibly multiple matches in a group
 
 if [ $# -ne 1 ]; then
     echo "Usage: `basename $0` user|group"
     exit 1
 fi
 
+PGPASSWORD=`cat /project/arcs/rc_scripts/PGPASSWORD`
+function allocation_pi {
+    PI_USERNAME=$(PGPASSWORD=$PGPASSWORD psql -t -h scheduler -U mamreadonly -d mam -c "select ga.g_name,gu.g_name,ga.g_organization,go.g_description,ga.g_description from g_account ga join g_organization go on ga.g_organization=go.g_name join g_account_user gu on ga.g_name=gu.g_account where gu.g_admin='True' and ga.g_active='True' and ga.g_name='$1'" | awk -F'|' '{print $2}')
+    RESULT="$(parse_ldap $PI_USERNAME)"
+    echo "$RESULT ($1)"
+}
+
+function get_field {
+    echo "$(sed -n "s/^$1: //p" $2)"
+}
+
+function join {
+    local IFS="$1"
+    shift
+    printf "%-20s\n" "$*"
+}
+
 function parse_ldap {
     TMP=$(mktemp)
     RESULT=""
     ldapsearch -x -LLL -h ldap.virginia.edu -b "o=University of Virginia,c=US" uid=$1 >$TMP
 
-    for FIELD in displayName uvaPersonIAMAffiliation; do
-        STRING=$(sed -n "s/^$FIELD: //p" $TMP)
-        if [ "$2" = "group" ]; then
-            if [[ "$STRING" =~ "student" ]]; then
-                rm $TMP
-                return
-            fi
+    AFFILIATION=( $(get_field uvaPersonIAMAffiliation $TMP) )
+    if [ "$2" = "group" ]; then
+        if [[ "$AFFILIATION" =~ "student" ]]; then
+            rm $TMP
+            return
         fi
-        RESULT+=" $STRING"
-    done
-    echo -n "$1 $RESULT"
+    fi
+    DISPLAYNAME=$(get_field displayName $TMP)
+
+    printf "%-8s %-35s " "$1" "$DISPLAYNAME"
+    join , "${AFFILIATION[@]}"
 }
 
-ARG=$1
-PGPASSWORD=`cat /project/arcs/rc_scripts/PGPASSWORD`
-ID=$(id $ARG 2>/dev/null)
+#----------------
 
-echo "Potential PIs for $ARG:"
+ARG=$1
+ID=$(id $ARG 2>/dev/null)
 
 if [ ! -z "$ID" ]; then
 # search user
     USERNAME=$ARG
+    echo "Potential PIs for $USERNAME:"
+
     ALLOCATIONS=( $(sudo /opt/mam/current/bin/mam-balance -u $USERNAME | awk '{if(NR>2) print $2}') )
     for i in ${ALLOCATIONS[@]}; do
         #PI_USERNAME=$(sudo su - $USERNAME -c "mam-list-accounts -a $i" | tail -1 | sed 's/^.*\^\([^,\s]*\)[,\s].*$/\1/')
-        PI_USERNAME=$(PGPASSWORD=$PGPASSWORD psql -t -h scheduler -U mamreadonly -d mam -c "select ga.g_name,gu.g_name,ga.g_organization,go.g_description,ga.g_description from g_account ga join g_organization go on ga.g_organization=go.g_name join g_account_user gu on ga.g_name=gu.g_account where gu.g_admin='True' and ga.g_active='True' and ga.g_name='$i'" | awk -F'|' '{print $2}')
-        parse_ldap $PI_USERNAME
-        echo " ($i)"
+        allocation_pi $i
     done
 else
-    GROUP=$(getent group $ARG)
-    if [ ! -z "$GROUP" ]; then
-# search group
-        USERS=( $(echo $GROUP | sed 's/^.*://' | tr ',' ' ') )
-
-        for USERNAME in ${USERS[@]}; do
-            parse_ldap $USERNAME group
-        done
+    if [ ! -z "$(sudo /opt/mam/current/bin/mam-balance -a $ARG)" ]; then
+# search allocation
+        echo "PI for $ARG:"
+        allocation_pi $ARG
     else
-        echo "Cannot find user or group for $ARG"
+        GROUP=$(getent group $ARG)
+        if [ ! -z "$GROUP" ]; then
+# search group
+            echo "Potential PIs for $ARG:"
+            USERS=( $(echo $GROUP | sed 's/^.*://' | tr ',' ' ') )
+
+            for USERNAME in ${USERS[@]}; do
+                parse_ldap $USERNAME group
+            done
+        else
+            echo "Cannot find user or group for $ARG"
+        fi
     fi
 fi
