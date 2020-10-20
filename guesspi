@@ -31,7 +31,7 @@ if [ ! -z "$ID" ]; then
 # search user
     USERNAME=$ARG
     ALLOCATIONS=( $(sudo su - $USERNAME -c "allocations" | awk '{if(NR>2) print $1}') )
-    for i in $ALLOCATIONS; do
+    for i in ${ALLOCATIONS[@]}; do
         PI_USERNAME=$(sudo su - $USERNAME -c "mam-list-accounts -a $i" | tail -1 | sed 's/^.*\^\([^,\s]*\)[,\s].*$/\1/')
         parse_ldap $PI_USERNAME
     done
