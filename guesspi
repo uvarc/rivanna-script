@@ -1,4 +1,16 @@
 #!/bin/bash
+# Guess the PI of a user or group
+#
+# Pseudocode
+# ----------
+# if argument is user:
+#   for each allocation:
+#     print PI  # PI is unique per allocation
+# else if argument is group:
+#   for each member:
+#     if ldap uvaPersonIAMAffiliation does not contain "student":
+#       print   # possibly multiple matches in a group
+
 if [ $# -ne 1 ]; then
     echo "Usage: `basename $0` user|group"
     exit 1
