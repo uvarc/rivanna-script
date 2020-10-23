@@ -10,6 +10,7 @@ Miscellaneous scripts for Rivanna
 - `show-slurmscript` - Given job ID show SLURM script
 
 ## Groups
+- `alloc` - List allocation names quickly
 - `get-ivygroup` - Find which Ivy groups a user belongs to
 - `group-compare` - Compare members of a group with MyGroups `group.txt` and show discrepancies
 - `group-intersect` - Intersection of two groups on Rivanna

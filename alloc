@@ -1,0 +1,17 @@
+#!/bin/bash
+# List allocation names quickly
+
+if [ $# -ne 1 ]; then
+    echo "Usage: `basename $0` user"
+    exit 1
+fi
+
+USERNAME=$1
+PGPASSWORD=`cat /project/arcs/rc_scripts/PGPASSWORD`
+
+ALLOCATIONS=$(PGPASSWORD=$PGPASSWORD psql -t -h scheduler -U mamreadonly -d mam -c "select ga.g_name from g_account ga join g_account_user gu on ga.g_name=gu.g_account where ga.g_active='True' and gu.g_name='$USERNAME'")
+
+# removes leading space
+for i in ${ALLOCATIONS[@]}; do
+    echo "$i"
+done

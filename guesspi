@@ -64,9 +64,8 @@ if [ ! -z "$ID" ]; then
     USERNAME=$ARG
     echo "Potential PIs for $USERNAME:"
 
-    ALLOCATIONS=( $(sudo /opt/mam/current/bin/mam-balance -u $USERNAME | awk '{if(NR>2) print $2}') )
+    ALLOCATIONS=( $(alloc $USERNAME) )
     for i in ${ALLOCATIONS[@]}; do
-        #PI_USERNAME=$(sudo su - $USERNAME -c "mam-list-accounts -a $i" | tail -1 | sed 's/^.*\^\([^,\s]*\)[,\s].*$/\1/')
         allocation_pi $i
     done
 else
