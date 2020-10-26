@@ -49,22 +49,28 @@ printf "%0.s-" {1..107} >>$LOG
 echo >>$LOG
 
 for i in ${!IN[@]}; do
-    #echo ${IN[$i]}
     {
         TYPE=${TYPES[$i]}
         DIR=${DIRS[$i]}
+        total=$(wc -l < ${IN[$i]})
+        total=$((total-1))
+        count=1
         read # skip first line
         while read -r line; do
-            USERNAME=`echo $line|awk -F: '{print $8}'`
+            >&2 echo -ne "Reading ${IN[$i]} ($count/$total)\r"
+# could have multiple owners
+            USERNAME=`echo $line|awk -F: '{print $8}'|awk '{print $1}'`
             VOLUME=`echo $line|awk -F: '{print $1}'`
 
             if [ ! -e /$DIR/$VOLUME ]; then
+                count=$((count+1))
                 continue
             fi
 
 # skip instructional (assume smaller than 1 TB)
             RAWSIZE=$(df /$DIR/$VOLUME | awk '{if(NR==2) print $2}')
             if [ "$RAWSIZE" -lt "1000000000" ]; then
+                count=$((count+1))
                 continue
             fi
 
@@ -84,17 +90,28 @@ for i in ${!IN[@]}; do
                     SCHOOL=SOM ;;
                 *)
                     #>&2 echo "$USERNAME $SCHOOL_DEPT"
-                    continue
+                    if [ "$PRINT_ALL" = "false" ]; then
+                        count=$((count+1))
+                        continue
+                    fi
+                    SCHOOL=Other
                     ;;
             esac
 
             if [ "$PRINT_ALL" = "false" ]; then
                 if [ ! "$SCHOOL" = "$ARG" ]; then
+                    count=$((count+1))
                     continue
                 fi
             fi
 
-            printf "%-6s %-8s %-35s %-25s %-8s" $SCHOOL $USERNAME $NAME $VOLUME $TYPE
+            if [ -z "$USERNAME" ]; then
+                USERNAME="-"
+            fi
+            if [ -z "$NAME" ]; then
+                NAME="-"
+            fi
+            printf "%-6s %-8s %-35s %-25s %-8s" "$SCHOOL" "$USERNAME" "$NAME" "$VOLUME" "$TYPE"
 
             df /$DIR/$VOLUME | awk '
             function KtoT(input) {
@@ -106,13 +123,16 @@ for i in ${!IN[@]}; do
                     printf "%10.4f %10.4f\n",size,used
                 }
             }'
+
+            count=$((count+1))
         done
+        >&2 echo
     } < ${IN[$i]} >> $TMP
 done
 rm $TMPLDAP
 
 sort -k1 $TMP >>$LOG
-cat $LOG
+echo "Done. Saved to $LOG"
 
 awk '{
     size+=$6
