@@ -1,30 +1,38 @@
 #!/bin/bash
-# Ruoshi Sun
-# 2020-01-24
-#
 # compare group member with MyGroups
+# Ruoshi Sun
+# 2020-10-26: use comm; add "Remove"
+# 2020-01-24
 
 GROUP="http://admin.storage.virginia.edu/filesplus/group.txt"
+TMP1=$(mktemp)
+TMP2=$(mktemp)
 
 for g in $@; do
     echo ["$g"]
-    users1=(`curl -s $GROUP | grep "^$g:" | sed 's/^.*://' | tr ',' ' '`)
-    users2=(`getent group $g|sed 's/^.*://' | tr ',' ' '`)
+    curl -s $GROUP | sed -n "s/^${g}.*://p" | tr ',' '\n' >$TMP1
+    curl -s $GROUP | grep "^$g:" | sed 's/^.*://' | tr ',' '\n' >$TMP1
+    getent group $g|sed 's/^.*://' | tr ',' '\n' | sort >$TMP2
 
-    echo "group.txt (${#users1[*]}):"
-    echo ${users1[@]}
-    echo "rivanna (${#users2[*]}):"
-    echo ${users2[@]}
+    N1=$(wc -l <$TMP1)
+    N2=$(wc -l <$TMP2)
 
-    tmp=" ${users2[*]} " 
-    for i in ${users1[@]}; do
-        if [[ ! $tmp =~ " $i " ]] ; then
-            not_added+=($i)
-        fi
-    done
-
-    echo "not yet added (${#not_added[*]}):"
-    echo ${not_added[@]}
+    echo "group.txt ($N1):"
+    cat $TMP1 | tr '\n' ' '
     echo
-    unset users1 users2 tmp not_added
+    echo "rivanna ($N2):"
+    cat $TMP2 | tr '\n' ' '
+    echo
+
+    ADD=( $(comm -1 -3 $TMP2 $TMP1 ) )
+    REMOVE=( $(comm -1 -3 $TMP1 $TMP2 ) )
+
+    echo
+    echo "Add (${#ADD[@]}):"
+    echo ${ADD[@]}
+    echo
+    echo "Remove (${#REMOVE[@]}):"
+    echo ${REMOVE[@]}
 done
+
+rm $TMP1 $TMP2

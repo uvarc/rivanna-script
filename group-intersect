@@ -1,16 +1,30 @@
 #!/bin/bash
 #
-# find intersection of two groups
-# Ruoshi Sun 2019-12-10
-#
+# find intersection of N groups
+# Ruoshi Sun
+# 2020-10-26: N groups
+# 2019-12-10: 2 groups
+
+function print_usage {
+    echo "Usage: `basename $0` [-v] GROUP1 GROUP2 [GROUP3 ...]"
+    echo "-v   verbose"
+}
+
+function parse_group {
+    echo $1 | sed 's/^.*://' | tr ',' '\n' | sort
+}
+
+if [ $# -lt 2 ]; then
+    print_usage
+    exit 1
+fi
 
 VERBOSE=false
 
 while getopts ":hv" opt; do
     case $opt in
     h) 
-        echo "Usage: `basename $0` [-v] GROUP1 GROUP2"
-        echo "-v   verbose"
+        print_usage
         exit
         ;;
     v) 
@@ -18,34 +32,41 @@ while getopts ":hv" opt; do
         shift
         ;;
     \?)
-        echo "Unknown option"
+        print_usage
         exit 1
         ;;
     esac
 done
 
-G1=$1
-G2=$2
-users1=(`getent group $G1|sed 's/^.*://' | tr ',' ' '`)
-users2=(`getent group $G2|sed 's/^.*://' | tr ',' ' '`)
+Gs=( $@ )
+TMP=$(mktemp)
+Nprev=0
 
-if $VERBOSE; then
-    echo "$G1 (${#users1[*]}):"
-    echo ${users1[@]}
-    echo
-    echo "$G2 (${#users2[*]}):"
-    echo ${users2[@]}
-    echo
-fi
+for G in ${Gs[@]}; do
+    RAW=$(getent group $G)
+    if [ $? -ne 0 ]; then
+        echo "Error: cannot find group $G"
+        rm $TMP
+        exit 1
+    fi
 
-tmp=" ${users2[*]} " 
-for i in ${users1[@]}; do
-    if [[ $tmp =~ " $i " ]] ; then
-        intersect+=($i)
+    parse_group $RAW >>$TMP
+
+    if $VERBOSE; then
+        N=$(wc -l <$TMP)
+        N=$((N-Nprev))
+        Nprev=$N
+        echo "$G ($N):"
+        tail -n $N $TMP | tr '\n' ' '
+        echo
+        echo
     fi
 done
 
+INT=( $(sort $TMP | uniq -c | awk -v n=${#Gs[@]} '{if ($1==n) print $2}') )
 if $VERBOSE; then
-    echo -e "$G1 \u2229 $G2 (${#intersect[*]}):"
+    echo "Intersection (${#INT[@]}):"
 fi
-echo ${intersect[@]}
+echo ${INT[@]}
+
+rm $TMP
