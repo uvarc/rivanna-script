@@ -1,5 +1,4 @@
 #!/bin/bash
-#
 # find intersection of N groups
 # Ruoshi Sun
 # 2020-10-26: N groups
@@ -23,15 +22,11 @@ VERBOSE=false
 
 while getopts ":hv" opt; do
     case $opt in
-    h) 
-        print_usage
-        exit
-        ;;
     v) 
         VERBOSE=true
         shift
         ;;
-    \?)
+    *)
         print_usage
         exit 1
         ;;
