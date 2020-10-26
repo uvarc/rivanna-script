@@ -6,27 +6,41 @@ if [ $# -ne 1 ]; then
     exit 1
 fi
 
+function percentage {
+    echo "scale=4;$1*100/$2" | bc
+}
+
 LOG=$1
 PROJECT_COST=60
 VALUE_COST=45
 
 ml jq
 
-# project, value, all
-Sp=( $(awk '{if ($5 ~ /project/) print $6}' $LOG | jq -s length,min,max,add/length,add*$PROJECT_COST) )
+# {size, use, total use} x {project, value, all}
+Sp=( $(awk '{if ($5 ~ /project/) print $6}' $LOG | jq -s length,min,max,add/length,add,add*$PROJECT_COST) )
 Up=( $(awk '{if ($5 ~ /project/) print $7/$6*100}' $LOG | jq -s min,max,add/length) )
-Sv=( $(awk '{if ($5 ~ /value/) print $6}' $LOG | jq -s length,min,max,add/length,add*$VALUE_COST) )
-Uv=( $(awk '{if ($5 ~ /value/) print $7/$6*100}' $LOG | jq -s min,max,add/length) )
-Sa=( $(awk '{if (NR>2) print $6}' $LOG | jq -s length,min,max,add/length ) )
-Ua=( $(awk '{if (NR>2) print $7/$6*100}' $LOG | jq -s min,max,add/length ) )
-rev_all=$(echo "${Sp[4]}+${Sv[4]}" | bc)
+Tp=( $(awk '{if ($5 ~ /project/) print $7}' $LOG | jq -s min,max,add) )
+TotUsep=$(percentage ${Tp[2]} ${Sp[4]})
 
-printf "            %10s %10s %10s\n" Project Value All
-printf "%0.s-" {1..44}
+Sv=( $(awk '{if ($5 ~ /value/) print $6}' $LOG | jq -s length,min,max,add/length,add,add*$VALUE_COST) )
+Uv=( $(awk '{if ($5 ~ /value/) print $7/$6*100}' $LOG | jq -s min,max,add/length) )
+Tv=( $(awk '{if ($5 ~ /value/) print $7}' $LOG | jq -s min,max,add) )
+TotUsev=$(percentage ${Tv[2]} ${Sv[4]})
+
+Sa=( $(awk '{if (NR>2) print $6}' $LOG | jq -s length,min,max,add/length,add ) )
+Ua=( $(awk '{if (NR>2) print $7/$6*100}' $LOG | jq -s min,max,add/length ) )
+Ta=( $(awk '{if (NR>2) print $7}' $LOG | jq -s min,max,add) )
+TotUsea=$(percentage ${Ta[2]} ${Sa[4]})
+rev_all=$(echo "scale=4;${Sp[5]}+${Sv[5]}" | bc)
+
+printf "          %10s %10s %10s\n" Project Value All
+printf "%0.s-" {1..42}
 echo
-printf "#           %10d %10d %10d\n"       ${Sp[0]} ${Sv[0]} ${Sa[0]}
-printf "Min[TB]     %10.4f %10.4f %10.4f\n" ${Sp[1]} ${Sv[1]} ${Sa[1]}
-printf "Max[TB]     %10.4f %10.4f %10.4f\n" ${Sp[2]} ${Sv[2]} ${Sa[2]}
-printf "Ave[TB]     %10.4f %10.4f %10.4f\n" ${Sp[3]} ${Sv[3]} ${Sa[3]}
-printf "AveUsage[%%] %10.4f %10.4f %10.4f\n" ${Up[2]} ${Uv[2]} ${Ua[2]}
-printf "Revenue[\$]  %10.2f %10.2f %10.2f\n" ${Sp[4]} ${Sv[4]} $rev_all
+printf "#         %10d %10d %10d\n"       ${Sp[0]} ${Sv[0]} ${Sa[0]}
+printf "Min[TB]   %10.4f %10.4f %10.4f\n" ${Sp[1]} ${Sv[1]} ${Sa[1]}
+printf "Max[TB]   %10.4f %10.4f %10.4f\n" ${Sp[2]} ${Sv[2]} ${Sa[2]}
+printf "Ave[TB]   %10.4f %10.4f %10.4f\n" ${Sp[3]} ${Sv[3]} ${Sa[3]}
+printf "Tot[TB]   %10.4f %10.4f %10.4f\n" ${Sp[4]} ${Sv[4]} ${Sa[4]}
+printf "AveUse[%%] %10.2f %10.2f %10.2f\n" ${Up[2]} ${Uv[2]} ${Ua[2]}
+printf "TotUse[%%] %10.2f %10.2f %10.2f\n" $TotUsep $TotUsev $TotUsea
+printf "Cost[\$]   %10.2f %10.2f %10.2f\n" ${Sp[5]} ${Sv[5]} $rev_all
