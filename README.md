@@ -2,6 +2,7 @@
 Miscellaneous scripts for Rivanna
 
 ## Self help
+- `gitall` - Shortcut for add-commit-push
 - `jkrollout` - Install custom Jupyter kernel for a container
 - `list-group-usage` - List SU usage for each group member
 - `list-storage` - List storage usage by school and department

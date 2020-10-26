@@ -31,8 +31,8 @@ function print_stage {
 
 # verify $SIF exists and $DISPLAYNAME is nonempty
 print_stage "Checking inputs"
-if ! ls $SIF &> /dev/null; then
-    echo "Error: $SIF not found"
+if ! ls $SIFPATH &> /dev/null; then
+    echo "Error: $SIFPATH not found"
     exit 1
 fi
 
