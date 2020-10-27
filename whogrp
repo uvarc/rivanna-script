@@ -18,14 +18,14 @@ fi
 
 users=`getent group $group` 
 
-if [ -z $users ]; then
+if [ $? -ne 0 ]; then
     echo "Unknown group: $group"
     exit 1
 fi
 
 for i in $HEADS; do
     echo "$i"
-    search=`echo $users | sed 's/^.*://' | tr ',' '|'`
+    search=`echo $users | sed -e 's/^.*://' -e 's/,/|/g'`
     ssh $i.hpc.virginia.edu "who" | grep -E "$search"
     echo
 done

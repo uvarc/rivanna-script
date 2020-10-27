@@ -23,9 +23,6 @@ MODULES=($(docker run --rm $IMG ls -1 $DIR | \
 BEFORE=$(mktemp)
 AFTER=$(mktemp)
 ALL=$(mktemp)
-echo "Before: $BEFORE"
-echo "After: $AFTER"
-echo "All: $ALL"
 
 docker run --rm $IMG $PYTHON -c "import os; pid=os.getpid(); os.system('lsof -p %d -Fn' % pid)" | \
     sed -n 's/^n//p' >$BEFORE
@@ -36,7 +33,6 @@ for i in "${!MODULES[@]}"; do
     docker run --rm $IMG $PYTHON -c "import os; pid=os.getpid(); import ${MODULES[$i]}; os.system('lsof -p %d -Fn' % pid)" | \
         sed -n 's/^n//p' >$AFTER
     diff $BEFORE $AFTER | sed -n 's/^> //p' >>$ALL
-    #echo
 done
 
 awk '{print $1}' $ALL|sort|uniq

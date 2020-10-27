@@ -16,10 +16,10 @@ fi
 USERNAME=$(sed -n 's/^\s*UserId=\([a-z0-9]*\)(.*$/\1/p' $TMP)
 
 # Need to take into account of such cases:
-#                                                           *             
+#              note space v                                 *                                 /-- args --\
 #   Command=/.../seperated codes/code/test_county_extraction/get_region_bipartite_graph.sbatch 22033 08_30
 #   WorkDir=/.../seperated codes/code/test_county_extraction
-#
+#                         ^
 # Escape space -> can't use back tick
 # Argument in Command -> print WorkDir then first argument starting from * in Command
 #
