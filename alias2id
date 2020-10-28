@@ -1,5 +1,7 @@
 #!/bin/bash
 # get user id from alias
+# only works for alias@virginia.edu
+# 2020-10-28
 
 if [ $# -ne 1 ]; then
     echo "Usage: `basename $0` alias"
@@ -7,10 +9,19 @@ if [ $# -ne 1 ]; then
 fi
 
 ALIAS=$1
-USERNAME=$(ldapsearch -x -LLL -h ldap.virginia.edu -b "o=University of Virginia,c=US" mailAlternateAddress=${ALIAS}@virginia.edu uid | awk '/^uid/ {print $2}')
+TMP=$(mktemp)
+ldapsearch -x -LLL -h ldap.virginia.edu -b "o=University of Virginia,c=US" mailAlternateAddress=${ALIAS}@*virginia.edu >$TMP
+
+USERNAME=$(awk '/^uid/ {print $2}' $TMP)
 
 if [ -z "$USERNAME" ]; then
     echo "Not found"
 else
     echo $USERNAME
+    ALIASES=( $(sed -n 's/^mailAlternateAddress: \([^@]*\)@.*$/\1/p' $TMP) )
+    if [ ${#ALIASES[@]} -gt 1 ]; then
+        echo "Aliases (${#ALIASES[@]}): ${ALIASES[@]}"
+    fi
 fi
+
+rm $TMP
