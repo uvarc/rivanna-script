@@ -1,0 +1,16 @@
+#!/bin/bash
+# get user id from alias
+
+if [ $# -ne 1 ]; then
+    echo "Usage: `basename $0` alias"
+    exit 1
+fi
+
+ALIAS=$1
+USERNAME=$(ldapsearch -x -LLL -h ldap.virginia.edu -b "o=University of Virginia,c=US" mailAlternateAddress=${ALIAS}@virginia.edu uid | awk '/^uid/ {print $2}')
+
+if [ -z "$USERNAME" ]; then
+    echo "Not found"
+else
+    echo $USERNAME
+fi

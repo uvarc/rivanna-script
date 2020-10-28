@@ -2,6 +2,7 @@
 Miscellaneous scripts for Rivanna
 
 ## Self help
+- `alias2id` - Get user ID from alias
 - `gitall` - Shortcut for add-commit-push
 - `jkrollout` - Install custom Jupyter kernel for a container
 - `list-group-usage` - List SU usage for each group member
