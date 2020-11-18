@@ -1,5 +1,7 @@
 #!/bin/bash
 # URL to display MyGroup membership
+# Ruoshi Sun
+# 2020-11-17
 
 if [ $# -ne 1 ]; then
     echo "Usage: `basename $0` group"
@@ -10,7 +12,8 @@ GROUP="http://admin.storage.virginia.edu/filesplus/group.txt"
 g=$1
 u=$(curl -s $GROUP | sed -n "s/^${g}:.*://p" | awk -F, '{print $1}')
 if [ -z "$u" ]; then
-    echo "Cannot find any user in $g"
+    echo "Cannot generate URL (group $g does not exist or no user in $g)"
+    exit
 fi
 
 echo "https://mygroups.virginia.edu/display-groupinfo.jsp?GroupSelected=${g}&uva-userid=${u}"
