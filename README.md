@@ -3,6 +3,7 @@ Miscellaneous scripts for Rivanna
 
 ## Self help
 - `alias2id` - Get user ID from alias
+- `cleancache` - Remove cache files
 - `gitall` - Shortcut for add-commit-push
 - `jkrollout` - Install custom Jupyter kernel for a container
 - `list-group-usage` - List SU usage for each group member
@@ -18,6 +19,7 @@ Miscellaneous scripts for Rivanna
 - `group-compare` - Compare members of a group with MyGroups `group.txt` and show discrepancies
 - `group-intersect` - Intersection of N groups on Rivanna
 - `guesspi` - Guess the PI of a group
+- `mgurl` - URL to display MyGroup membership
 - `whogrp` - For each group member show who's logged on to which frontend
 
 ## Libraries/Packages

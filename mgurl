@@ -1,0 +1,16 @@
+#!/bin/bash
+# URL to display MyGroup membership
+
+if [ $# -ne 1 ]; then
+    echo "Usage: `basename $0` group"
+    exit 1
+fi
+
+GROUP="http://admin.storage.virginia.edu/filesplus/group.txt"
+g=$1
+u=$(curl -s $GROUP | sed -n "s/^${g}:.*://p" | awk -F, '{print $1}')
+if [ -z "$u" ]; then
+    echo "Cannot find any user in $g"
+fi
+
+echo "https://mygroups.virginia.edu/display-groupinfo.jsp?GroupSelected=${g}&uva-userid=${u}"

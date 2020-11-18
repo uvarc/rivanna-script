@@ -1,0 +1,4 @@
+#!/bin/bash
+for i in cache config dbus ondemand; do
+    rm -rf ~/.$i
+done
