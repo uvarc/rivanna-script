@@ -1,0 +1,37 @@
+#!/bin/bash
+# generate OOD session URL
+if [ $# -ne 1 ]; then
+    echo "Usage: `basename $0` JobID"
+    exit 1
+fi
+JOBID=$1
+TMP=$(mktemp)
+
+scontrol show job $1 >$TMP
+if [ $? -ne 0 ]; then
+    echo "$JOBID is not an active job"
+    rm $TMP
+    exit 1
+fi
+
+USERNAME=$(sed -n 's/^\s*UserId=\([a-z0-9]*\)(.*$/\1/p' $TMP)
+DIR=$(awk -F= '/WorkDir/ {print $2}' $TMP)
+echo "$DIR"
+
+# check if job is an OOD session
+if [[ ! "$DIR" =~ "/home/$USERNAME/ondemand".* ]]; then
+    echo "Not an OOD session"
+    rm $TMP
+    exit 1
+fi
+
+sudo su - $USERNAME -c "cat $DIR/connection.yml" >$TMP
+HOST=$(awk '{if(NR==1) print $2}' $TMP)
+PORT=$(awk '{if(NR==2) print $2}' $TMP)
+PASSWORD=$(awk '{if(NR==3) print $2}' $TMP)
+
+URL="https://rivanna-portal.hpc.virginia.edu/node/$HOST/$PORT/lab"
+echo $URL
+echo $PASSWORD
+
+rm $TMP

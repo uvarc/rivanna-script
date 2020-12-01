@@ -12,6 +12,7 @@ Miscellaneous scripts for Rivanna
 
 ## SLURM
 - `show-slurmscript` - Given job ID show SLURM script
+- `oodurl` - Generate URL for OOD session
 
 ## Groups
 - `alloc` - List allocation names quickly
