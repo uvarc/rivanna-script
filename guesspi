@@ -21,9 +21,9 @@ fi
 
 PGPASSWORD=`cat /project/arcs/rc_scripts/PGPASSWORD`
 function allocation_pi {
-    PI_USERNAME=$(PGPASSWORD=$PGPASSWORD psql -t -h scheduler -U mamreadonly -d mam -c "select ga.g_name,gu.g_name,ga.g_organization,go.g_description,ga.g_description from g_account ga join g_organization go on ga.g_organization=go.g_name join g_account_user gu on ga.g_name=gu.g_account where gu.g_admin='True' and ga.g_active='True' and ga.g_name='$1'" | awk -F'|' '{print $2}')
-    RESULT="$(parse_ldap $PI_USERNAME)"
-    echo "$RESULT ($1)"
+    PGPASSWORD=$PGPASSWORD psql -t -h scheduler -U mamreadonly -d mam -c "select ga.g_name,gu.g_name,ga.g_organization,go.g_description,ga.g_description from g_account ga join g_organization go on ga.g_organization=go.g_name join g_account_user gu on ga.g_name=gu.g_account where gu.g_admin='True' and ga.g_active='True' and ga.g_name='$1'" | awk -F'|' '{print $2}'
+    #RESULT="$(parse_ldap $PI_USERNAME)"
+    #echo "$RESULT ($1)"
 }
 
 function get_field {
@@ -62,22 +62,25 @@ ID=$(id $ARG 2>/dev/null)
 if [ ! -z "$ID" ]; then
 # search user
     USERNAME=$ARG
-    echo "Potential PIs for $USERNAME:"
+    echo "Potential PIs for user $USERNAME:"
 
     ALLOCATIONS=( $(alloc $USERNAME) )
     for i in ${ALLOCATIONS[@]}; do
-        allocation_pi $i
+        PI_USERNAME=$(allocation_pi $i)
+        RESULT="$(parse_ldap $PI_USERNAME)"
+        echo "$RESULT ($1)"
     done
 else
-    if [ ! -z "$(sudo /opt/mam/current/bin/mam-balance -a $ARG)" ]; then
-# search allocation
-        echo "PI for $ARG:"
-        allocation_pi $ARG
+# test allocation
+    PI_USERNAME=$(allocation_pi $ARG)
+    if [ ! -z "$PI_USERNAME" ]; then
+        echo "PI for allocation $ARG:"
+        parse_ldap $PI_USERNAME
     else
         GROUP=$(getent group $ARG)
         if [ ! -z "$GROUP" ]; then
 # search group
-            echo "Potential PIs for $ARG:"
+            echo "Potential PIs for group $ARG:"
             USERS=( $(echo $GROUP | sed 's/^.*://' | tr ',' ' ') )
 
             for USERNAME in ${USERS[@]}; do
