@@ -1,0 +1,10 @@
+#!/usr/bin/env python
+from pypi_simple import PyPISimple
+pkgs = [
+    "numpy", "scipy", "keras", "keras-vis", "matplotlib", "seaborn", "pandas", "scikit-learn", "scikit-image", "opencv-python",
+    "jupyter", "ipykernel", "nbformat", "pydot",
+]
+with PyPISimple() as client:
+    for i in pkgs:
+        version = [j.version for j in client.get_project_page(i).packages if 'rc' not in j.version and 'dev' not in j.version]
+        print("%s %s" % (i, version[-1]))

@@ -16,6 +16,13 @@ if [ $# -eq 3 ]; then
     PYTHON=$3
 fi
 
+# check for lsof
+docker run --rm --entrypoint lsof $IMG &> /dev/null
+if [ $? -ne 0 ]; then
+    echo "Please install lsof in $IMG"
+    exit 1
+fi
+
 # python module list
 MODULES=($(docker run --rm $IMG ls -1 $DIR | \
     grep -vE "dist-info|^_|\.|README"))

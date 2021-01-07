@@ -21,5 +21,4 @@ for i in ${APP[@]}; do
 done >>$TMP
 
 sort $TMP | uniq
-cat $TMP
 rm $TMP

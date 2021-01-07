@@ -72,7 +72,7 @@ function search_pip {
     done
 }
 
-module load anaconda/2019.10-py3.7
+module load anaconda/2019.10-py3.7 2>/dev/null
 
 if [[ $MANAGER =~ ^c ]]; then
     search_conda $PACKAGES_SORTED
