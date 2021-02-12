@@ -4,7 +4,7 @@
 # 2020-10-26: use comm; add "Remove"
 # 2020-01-24
 
-GROUP="http://admin.storage.virginia.edu/filesplus/group.txt"
+GROUP="https://rci.hpc.virginia.edu/filesplus/group.txt"
 TMP1=$(mktemp)
 TMP2=$(mktemp)
 
