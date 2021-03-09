@@ -35,9 +35,9 @@ function report {
 # put GPU nodes at the bottom
 # print memory in GB
 # replace KNL's 256 with 64 physical cores
-    echo "Cores/node,Memory,GPU model,GPU devices,Nodes"
+    echo "Cores/Node,Memory/Node,GPU model,GPU devices/Node,# of Nodes"
     for i in ${!ALL_NAME[@]}; do
-        printf -- "%d,%d,%s,%s,%s\n" "${ALL_CORE[$i]}" "$((ALL_MEMORY[$i]/1000))" "${ALL_GPUNAME[$i]}" "${ALL_GPU[$i]}" "${ALL_NUMNODE[$i]}"
+        printf -- "%d,%s,%s,%s,%s\n" "${ALL_CORE[$i]}" "$((ALL_MEMORY[$i]/1000))GB" "${ALL_GPUNAME[$i]}" "${ALL_GPU[$i]}" "${ALL_NUMNODE[$i]}"
     done | sort -t, -k3 | sed 's/^256,/64,/'
 }
 
