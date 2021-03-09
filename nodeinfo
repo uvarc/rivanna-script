@@ -6,7 +6,6 @@
 ALL_NAME=()
 ALL_CORE=()
 ALL_MEMORY=()
-#ALL_NUMNODE=(1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1) # initialize with a few more just in case...
 ALL_NUMNODE=()
 ALL_GPUNAME=()
 ALL_GPU=()
@@ -35,9 +34,9 @@ function report {
 # put GPU nodes at the bottom
 # print memory in GB
 # replace KNL's 256 with 64 physical cores
-    echo "Cores/Node,Memory/Node,GPU model,GPU devices/Node,# of Nodes"
+    echo "Cores/Node,Memory/Node (GB),GPU model,GPU devices/Node,# of Nodes"
     for i in ${!ALL_NAME[@]}; do
-        printf -- "%d,%s,%s,%s,%s\n" "${ALL_CORE[$i]}" "$((ALL_MEMORY[$i]/1000))GB" "${ALL_GPUNAME[$i]}" "${ALL_GPU[$i]}" "${ALL_NUMNODE[$i]}"
+        printf -- "%d,%s,%s,%s,%s\n" "${ALL_CORE[$i]}" "$((ALL_MEMORY[$i]/1000))" "${ALL_GPUNAME[$i]}" "${ALL_GPU[$i]}" "${ALL_NUMNODE[$i]}"
     done | sort -t, -k3 | sed 's/^256,/64,/'
 }
 
@@ -46,8 +45,7 @@ NODES=($(scontrol show hostnames $(sinfo -ho "%N")))
 NUM_NODES=${#NODES[@]}
 
 for i in ${!NODES[@]}; do
-#for i in udc-ba26-25; do
-    echo -ne "$((i+1))/$NUM_NODES\r"
+    #echo -ne "$((i+1))/$NUM_NODES\r"
     NODE=${NODES[$i]}
 
     INFO=$(scontrol show node $NODE -o | tr ' ' '\n')
@@ -55,7 +53,7 @@ for i in ${!NODES[@]}; do
     MEMORY=$(getval "$INFO" RealMemory)
     PARTITION=$(getval "$INFO" Partitions)
 
-    if [ "$PARTITION" = "gpu" ]; then
+    if [[ "$PARTITION" = "gpu" || "$PARTITION" = "bii-gpu" ]]; then
         GPUNAME=$(getval "$INFO" AvailableFeatures)
         GPUNAME=${GPUNAME^^}
         GPU=$(getval "$INFO" CfgTRES)
@@ -71,4 +69,4 @@ for i in ${!NODES[@]}; do
 done
 
 echo
-report
+report >nodeinfo.csv
