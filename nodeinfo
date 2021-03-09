@@ -1,0 +1,69 @@
+#!/bin/bash
+# compile node info
+# Ruoshi Sun
+# 2021-03-09
+
+ALL_NAME=()
+ALL_CORE=()
+ALL_MEMORY=()
+ALL_NUMNODE=(1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1) # initialize with a few more just in case...
+ALL_GPUNAME=()
+ALL_GPU=()
+
+function getval {
+    echo "$1" | awk -v s=$2 -F'=' '$0~s {print $NF}'
+}
+
+function append {
+    for i in ${!ALL_NAME[@]}; do
+        if [ "$1" = "${ALL_NAME[$i]}" ]; then
+            ALL_NUMNODE[$i]=$((${ALL_NUMNODE[$i]}+1))
+            return
+        fi
+    done
+
+    ALL_NAME+=("$1")
+    ALL_CORE+=("$2")
+    ALL_MEMORY+=("$3")
+    ALL_GPUNAME+=("$4")
+    ALL_GPU+=("$5")
+}
+
+function report {
+    echo "Cores/node,Memory,GPU model,GPU devices,Nodes"
+    for i in ${!ALL_NAME[@]}; do
+        printf -- "%d,%d,%s,%s,%s\n" "${ALL_CORE[$i]}" "${ALL_MEMORY[$i]}" "${ALL_GPUNAME[$i]}" "${ALL_GPU[$i]}" "${ALL_NUMNODE[$i]}"
+    done
+}
+
+#NODES=($(scontrol show hostnames $(sinfo -ho "%N") | head -10))
+NODES=($(scontrol show hostnames $(sinfo -ho "%N")))
+NUM_NODES=${#NODES[@]}
+
+for i in ${!NODES[@]}; do
+#for i in udc-ba26-25; do
+    echo -ne "$((i+1))/$NUM_NODES\r"
+    NODE=${NODES[$i]}
+
+    INFO=$(scontrol show node $NODE -o | tr ' ' '\n')
+    CORE=$(getval "$INFO" CPUTot)
+    MEMORY=$(getval "$INFO" RealMemory)
+    PARTITION=$(getval "$INFO" Partitions)
+
+    if [ "$PARTITION" = "gpu" ]; then
+        GPUNAME=$(getval "$INFO" AvailableFeatures)
+        GPUNAME=${GPUNAME^^}
+        GPU=$(getval "$INFO" CfgTRES)
+    else
+        GPUNAME="-"
+        GPU="-"
+    fi
+
+    NAME="${CORE}_${MEMORY}_${GPUNAME}"
+
+    append $NAME $CORE $MEMORY $GPUNAME $GPU
+    count=$((count+1))
+done
+
+echo
+report

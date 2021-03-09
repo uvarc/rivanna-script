@@ -1,0 +1,26 @@
+JobId=17297338 JobName=get_region_bipartite_graph.sbatch
+   UserId=zm8bh(2324630) GroupId=bii_xmode(31693) MCS_label=N/A
+   Priority=1015254 Nice=0 Account=nssac_covid19 QOS=normal
+   JobState=RUNNING Reason=None Dependency=(null)
+   Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0
+   RunTime=00:21:16 TimeLimit=18:00:00 TimeMin=N/A
+   SubmitTime=2020-10-17T05:41:34 EligibleTime=2020-10-17T05:41:34
+   AccrueTime=2020-10-17T05:41:34
+   StartTime=2020-10-18T05:58:33 EndTime=2020-10-18T23:58:34 Deadline=N/A
+   SuspendTime=None SecsPreSuspend=0 LastSchedEval=2020-10-18T05:58:33
+   Partition=bii AllocNode:Sid=udc-aj38-17c1:186106
+   ReqNodeList=(null) ExcNodeList=(null)
+   NodeList=udc-aj40-1c1
+   BatchHost=udc-aj40-1c1
+   NumNodes=1 NumCPUs=20 NumTasks=1 CPUs/Task=20 ReqB:S:C:T=0:0:*:*
+   TRES=cpu=20,mem=100000M,node=1,billing=20
+   Socks/Node=* NtasksPerN:B:S:C=0:0:*:1 CoreSpec=*
+   MinCPUsNode=20 MinMemoryNode=100000M MinTmpDiskNode=0
+   Features=(null) DelayBoot=00:00:00
+   OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null)
+   Command=/sfs/qumulo/qhome/zm8bh/Mobility_Codes/seperated codes/code/test_county_extraction/get_region_bipartite_graph.sbatch 22033 08_30
+   WorkDir=/sfs/qumulo/qhome/zm8bh/Mobility_Codes/seperated codes/code/test_county_extraction
+   StdErr=/sfs/qumulo/qhome/zm8bh/Mobility_Codes/seperated codes/code/test_county_extraction/slurm-17297338.out
+   StdIn=/dev/null
+   StdOut=/sfs/qumulo/qhome/zm8bh/Mobility_Codes/seperated codes/code/test_county_extraction/slurm-17297338.out
+   Power=
