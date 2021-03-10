@@ -23,12 +23,10 @@ function append {
         fi
     done
 
-    ALL_NAME+=("$1")
-    ALL_CORE+=("$2")
-    ALL_MEMORY+=("$3")
-    ALL_GPUNAME+=("$4")
-    ALL_GPUMEMORY+=("$5")
-    ALL_GPU+=("$6")
+    for i in NAME CORE MEMORY GPUNAME GPUMEMORY GPU; do
+        eval ALL_${i}+=\("$1"\)
+        shift
+    done
     ALL_NUMNODE+=(1)
 }
 
