@@ -8,6 +8,7 @@ ALL_CORE=()
 ALL_MEMORY=()
 ALL_NUMNODE=()
 ALL_GPUNAME=()
+ALL_GPUMEMORY=()
 ALL_GPU=()
 
 function getval {
@@ -26,7 +27,8 @@ function append {
     ALL_CORE+=("$2")
     ALL_MEMORY+=("$3")
     ALL_GPUNAME+=("$4")
-    ALL_GPU+=("$5")
+    ALL_GPUMEMORY+=("$5")
+    ALL_GPU+=("$6")
     ALL_NUMNODE+=(1)
 }
 
@@ -34,18 +36,21 @@ function report {
 # put GPU nodes at the bottom
 # print memory in GB
 # replace KNL's 256 with 64 physical cores
-    echo "Cores/Node,Memory/Node (GB),GPU model,GPU devices/Node,# of Nodes"
+# RTX2080 -> RTX 2080 Ti
+    echo "Cores/Node,Memory/Node (GB),GPU model,GPU memory/Device (GB),GPU devices/Node,# of Nodes"
     for i in ${!ALL_NAME[@]}; do
-        printf -- "%d,%s,%s,%s,%s\n" "${ALL_CORE[$i]}" "$((ALL_MEMORY[$i]/1000))" "${ALL_GPUNAME[$i]}" "${ALL_GPU[$i]}" "${ALL_NUMNODE[$i]}"
-    done | sort -t, -k3 | sed 's/^256,/64,/'
+        printf -- "%d,%d,%s,%s,%s,%s\n" \
+            "${ALL_CORE[$i]}" "$((ALL_MEMORY[$i]/1000))" \
+            "${ALL_GPUNAME[$i]}" "${ALL_GPUMEMORY[$i]}" "${ALL_GPU[$i]}" \
+            "${ALL_NUMNODE[$i]}"
+    done | sort -t, -k3 | sed -e 's/^256,/64,/' -e 's/RTX2080/RTX 2080 Ti/g'
 }
 
-#NODES=($(scontrol show hostnames $(sinfo -ho "%N") | head -10))
 NODES=($(scontrol show hostnames $(sinfo -ho "%N")))
 NUM_NODES=${#NODES[@]}
 
 for i in ${!NODES[@]}; do
-    #echo -ne "$((i+1))/$NUM_NODES\r"
+    echo -ne "$((i+1))/$NUM_NODES\r"
     NODE=${NODES[$i]}
 
     INFO=$(scontrol show node $NODE -o | tr ' ' '\n')
@@ -57,14 +62,35 @@ for i in ${!NODES[@]}; do
         GPUNAME=$(getval "$INFO" AvailableFeatures)
         GPUNAME=${GPUNAME^^}
         GPU=$(getval "$INFO" CfgTRES)
+
+# hardcode GPU memory
+        case $GPUNAME in
+        K80)
+            GPUMEMORY="11"
+            ;;
+        P100)
+            GPUMEMORY="12"
+            ;;
+        RTX2080)
+            GPUMEMORY="11"
+            ;;
+        V100)
+            if [ "$CORE" = "40" ]; then
+                GPUMEMORY="32"
+            else
+                GPUMEMORY="16"
+            fi
+            ;;
+        esac
     else
         GPUNAME="-"
+        GPUMEMORY="-"
         GPU="-"
     fi
 
     NAME="${CORE}_${MEMORY}_${GPUNAME}"
 
-    append $NAME $CORE $MEMORY $GPUNAME $GPU
+    append $NAME $CORE $MEMORY $GPUNAME $GPUMEMORY $GPU
     count=$((count+1))
 done
 
