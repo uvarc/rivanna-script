@@ -5,30 +5,27 @@ if [ $# -ne 1 ]; then
     exit 1
 fi
 JOBID=$1
-TMP=$(mktemp)
 
-scontrol show job $1 >$TMP
+JOBINFO=$(scontrol show job $1)
 if [ $? -ne 0 ]; then
     echo "$JOBID is not an active job"
-    rm $TMP
     exit 1
 fi
 
-USERNAME=$(sed -n 's/^\s*UserId=\([a-z0-9]*\)(.*$/\1/p' $TMP)
-DIR=$(awk -F= '/WorkDir/ {print $2}' $TMP)
+USERNAME=$(echo "$JOBINFO" | sed -n 's/^\s*UserId=\([a-z0-9]*\)(.*$/\1/p')
+DIR=$(echo "$JOBINFO" | awk -F= '/WorkDir/ {print $2}')
 echo "$DIR"
 
 # check if job is an OOD session
 if [[ ! "$DIR" =~ "/home/$USERNAME/ondemand".* ]]; then
     echo "Not an OOD session"
-    rm $TMP
     exit 1
 fi
 
-sudo su - $USERNAME -c "cat $DIR/connection.yml" >$TMP
-HOST=$(awk 'NR==1 {print $2}' $TMP)
-PORT=$(awk 'NR==2 {print $2}' $TMP)
-PASSWORD=$(awk 'NR==3 {print $2}' $TMP)
+CONNECTION=$(sudo su - $USERNAME -c "cat $DIR/connection.yml")
+HOST=$(echo "$CONNECTION" | awk 'NR==1 {print $2}')
+PORT=$(echo "$CONNECTION" | awk 'NR==2 {print $2}')
+PASSWORD=$(echo "$CONNECTION" | awk 'NR==3 {print $2}')
 APP=$(basename $(realpath $DIR/../..))
 
 case $APP in
@@ -42,5 +39,3 @@ esac
 
 echo $URL
 echo $PASSWORD
-
-rm $TMP
