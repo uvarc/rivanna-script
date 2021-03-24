@@ -18,7 +18,7 @@ DISPLAYNAME=$2
 [ $# -eq 3 ] && GPU=true || GPU=false
 
 # constants
-SINGULARITY_VERSION=3.5.2
+SINGULARITY_VERSION=3.7.1
 KERNEL=$HOME/.local/share/jupyter/kernels
 SIF=$(basename $(echo $SIFPATH))
 DIR=$KERNEL/${SIF/.sif/}
@@ -46,7 +46,6 @@ print_stage "Inspecting $SIF"
 singularity inspect $SIFPATH 2>/dev/null
 if [ $? -eq 255 ]; then
     echo "Container may not have /bin/sh. Use singularity 3.6+."
-    SINGULARITY_VERSION=3.6.1
 fi
 
 # check if $SIF contains kernel package
@@ -93,7 +92,7 @@ fi
 
 cat > $DIR/$INIT <<EOF
 #!/bin/bash
-ml singularity/$SINGULARITY_VERSION
+ml singularity
 $EXEC
 EOF
 
