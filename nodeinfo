@@ -57,7 +57,8 @@ for i in ${!NODES[@]}; do
     PARTITION=$(getval "$INFO" Partitions)
 
     if [[ "$PARTITION" = "gpu" || "$PARTITION" = "bii-gpu" ]]; then
-        GPUNAME=$(getval "$INFO" AvailableFeatures)
+# get first feature
+        GPUNAME=$(getval "$INFO" AvailableFeatures|sed 's/,.*$//')
         GPUNAME=${GPUNAME^^}
         GPU=$(getval "$INFO" CfgTRES)
 
