@@ -4,8 +4,9 @@ if [ $# -ne 1 ]; then
     echo "Usage: `basename $0` JobID"
     exit 1
 fi
-JOBID=$1
+URLPREFIX="https://rivanna-portal.hpc.virginia.edu"
 
+JOBID=$1
 JOBINFO=$(scontrol show job $1)
 if [ $? -ne 0 ]; then
     echo "$JOBID is not an active job"
@@ -29,11 +30,18 @@ PASSWORD=$(echo "$CONNECTION" | awk 'NR==3 {print $2}')
 APP=$(basename $(realpath $DIR/../..))
 
 case $APP in
+jupyter_lab)
+    URL="${URLPREFIX}/node/$HOST/$PORT/lab"
+    ;;
+rstudio)
+    URL="${URLPREFIX}/rnode/$HOST/$PORT/lab"
+    ;;
 uva_matlab)
-    URL="https://rivanna-portal.hpc.virginia.edu/pun/sys/dashboard/noVNC-1.0.0/vnc.html?utf8=%E2%9C%93&autoconnect=true&path=rnode%2F$HOST%2F$PORT%2Fwebsockify&resize=remote&compressionsetting=6&qualitysetting=2&commit=Launch+MATLAB"
+    URL="${URLPREFIX}/pun/sys/dashboard/noVNC-1.0.0/vnc.html?utf8=%E2%9C%93&autoconnect=true&path=rnode%2F$HOST%2F$PORT%2Fwebsockify&resize=remote&compressionsetting=6&qualitysetting=2&commit=Launch+MATLAB"
     ;;
 *)
-    URL="https://rivanna-portal.hpc.virginia.edu/node/$HOST/$PORT/lab"
+    echo "$APP is not yet supported by this script. Sorry!"
+    exit 0
     ;;
 esac
 
