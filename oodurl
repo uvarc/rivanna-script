@@ -6,6 +6,11 @@ if [ $# -ne 1 ]; then
 fi
 URLPREFIX="https://rivanna-portal.hpc.virginia.edu"
 
+function unsupported {
+    echo "$1 is not yet supported by this script. Sorry!"
+    exit 0
+}
+
 JOBID=$1
 JOBINFO=$(scontrol show job $1)
 if [ $? -ne 0 ]; then
@@ -31,18 +36,39 @@ APP=$(basename $(realpath $DIR/../..))
 
 case $APP in
 jupyter_lab)
-    URL="${URLPREFIX}/node/$HOST/$PORT/lab"
+    URL="${URLPREFIX}/node/${HOST}/${PORT}/lab"
     ;;
 rstudio)
-    URL="${URLPREFIX}/rnode/$HOST/$PORT/lab"
+    URL="${URLPREFIX}/rnode/${HOST}/${PORT}/"
     ;;
-uva_matlab)
-    URL="${URLPREFIX}/pun/sys/dashboard/noVNC-1.0.0/vnc.html?utf8=%E2%9C%93&autoconnect=true&path=rnode%2F$HOST%2F$PORT%2Fwebsockify&resize=remote&compressionsetting=6&qualitysetting=2&commit=Launch+MATLAB"
+uva_vscode)
+    URL="${URLPREFIX}/rnode/${HOST}/${PORT}/?"
+    ;;
+uva_*)
+    URLVNC="${URLPREFIX}/pun/sys/dashboard/noVNC-1.0.0/vnc.html?utf8=%E2%9C%93&autoconnect=true&path=rnode%2F${HOST}%2F${PORT}%2Fwebsockify&resize=remote&compressionsetting=6&qualitysetting=2&commit=Launch+"
+    case $APP in
+    uva_matlab)
+        URL="${URLVNC}MATLAB"
+        ;;
+    uva_desktop)
+        URL="${URLVNC}Desktop"
+        ;;
+    uva_blender)
+        URL="${URLVNC}Blender"
+        ;;
+    uva_paraview)
+        URL="${URLVNC}ParaView"
+        ;;
+    uva_qgis)
+        URL="${URLVNC}QGIS"
+        ;;
+    *)
+        unsupported $1
+        ;;
+    esac
     ;;
 *)
-    echo "$APP is not yet supported by this script. Sorry!"
-    exit 0
-    ;;
+    unsupported $1
 esac
 
 echo $URL
