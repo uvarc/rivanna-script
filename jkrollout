@@ -18,7 +18,7 @@ DISPLAYNAME=$2
 [ $# -eq 3 ] && GPU=true || GPU=false
 
 # constants
-SINGULARITY_VERSION=3.7.1
+#SINGULARITY_VERSION=3.7.1
 KERNEL=$HOME/.local/share/jupyter/kernels
 SIF=$(basename $(echo $SIFPATH))
 DIR=$KERNEL/${SIF/.sif/}
