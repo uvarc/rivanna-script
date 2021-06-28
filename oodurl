@@ -28,10 +28,17 @@ if [[ ! "$DIR" =~ "/home/$USERNAME/ondemand".* ]]; then
     exit 1
 fi
 
+# check if connection.yml exists
+if [ ! -e $DIR/connection.yml ]; then
+    echo "connection.yml not found. Perhaps connection not yet established."
+    exit 1
+fi
+
 CONNECTION=$(sudo su - $USERNAME -c "cat $DIR/connection.yml")
 HOST=$(echo "$CONNECTION" | awk 'NR==1 {print $2}')
 PORT=$(echo "$CONNECTION" | awk 'NR==2 {print $2}')
 PASSWORD=$(echo "$CONNECTION" | awk 'NR==3 {print $2}')
+WEBSOCKET=$(echo "$CONNECTION" | awk 'NR==5 {print $2}')
 APP=$(basename $(realpath $DIR/../..))
 
 case $APP in
@@ -45,7 +52,7 @@ uva_vscode)
     URL="${URLPREFIX}/rnode/${HOST}/${PORT}/?"
     ;;
 uva_*)
-    URLVNC="${URLPREFIX}/pun/sys/dashboard/noVNC-1.0.0/vnc.html?utf8=%E2%9C%93&autoconnect=true&path=rnode%2F${HOST}%2F${PORT}%2Fwebsockify&resize=remote&compressionsetting=6&qualitysetting=2&commit=Launch+"
+    URLVNC="${URLPREFIX}/pun/sys/dashboard/noVNC-1.0.0/vnc.html?utf8=%E2%9C%93&autoconnect=true&path=rnode%2F${HOST}%2F${WEBSOCKET}%2Fwebsockify&resize=remote&compressionsetting=6&qualitysetting=2&commit=Launch+"
     case $APP in
     uva_matlab)
         URL="${URLVNC}MATLAB"
