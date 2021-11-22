@@ -35,16 +35,21 @@ function report {
 # print memory in GB
 # replace KNL's 256 with 64 physical cores
 # RTX2080 -> RTX 2080 Ti
-    echo "Cores/Node,Memory/Node (GB),GPU model,GPU memory/Device (GB),GPU devices/Node,# of Nodes"
+    echo "Cores/Node,Memory/Node,Specialty Hardware,GPU memory/Device,GPU devices/Node,# of Nodes"
     for i in ${!ALL_NAME[@]}; do
-        printf -- "%d,%d,%s,%s,%s,%s\n" \
-            "${ALL_CORE[$i]}" "$((ALL_MEMORY[$i]/1000))" \
+        printf -- "%d,%s,%s,%s,%s,%s\n" \
+            "${ALL_CORE[$i]}" "$((ALL_MEMORY[$i]/1000))GB" \
             "${ALL_GPUNAME[$i]}" "${ALL_GPUMEMORY[$i]}" "${ALL_GPU[$i]}" \
             "${ALL_NUMNODE[$i]}"
-    done | sort -t, -k3 | sed -e 's/^256,/64,/' -e 's/RTX2080/RTX 2080 Ti/g'
+    done | sort -t, -k3 | \
+    awk -F, -v OFS=, '{if($3!="-") {sub(/^/, "GPU: ", $3); print} else print}' | \
+    sed -e 's/^256,180GB,-/64,180GB,KNL/' \
+        -e 's/RTX2080/RTX 2080 Ti/g' \
+        -e '/112GB/d'
 }
 
 NODES=($(scontrol show hostnames $(sinfo -ho "%N")))
+#NODES=($(scontrol show hostnames $(sinfo -p gpu -ho "%N")))
 NUM_NODES=${#NODES[@]}
 
 for i in ${!NODES[@]}; do
@@ -59,25 +64,25 @@ for i in ${!NODES[@]}; do
     if [[ "$PARTITION" = "gpu" || "$PARTITION" = "bii-gpu" ]]; then
 # get first feature
         GPUNAME=$(getval "$INFO" AvailableFeatures|sed 's/,.*$//')
-        GPUNAME=${GPUNAME^^}
+        GPUNAME="${GPUNAME^^}"
         GPU=$(getval "$INFO" CfgTRES)
 
 # hardcode GPU memory
         case $GPUNAME in
         K80)
-            GPUMEMORY="11"
+            GPUMEMORY="11GB"
             ;;
         P100)
-            GPUMEMORY="12"
+            GPUMEMORY="12GB"
             ;;
         RTX2080)
-            GPUMEMORY="11"
+            GPUMEMORY="11GB"
             ;;
         V100)
             if [ "$CORE" = "40" ]; then
-                GPUMEMORY="32"
+                GPUMEMORY="32GB"
             else
-                GPUMEMORY="16"
+                GPUMEMORY="16GB"
             fi
             ;;
         esac

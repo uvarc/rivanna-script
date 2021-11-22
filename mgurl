@@ -8,9 +8,9 @@ if [ $# -ne 1 ]; then
     exit 1
 fi
 
-GROUP="http://admin.storage.virginia.edu/filesplus/group.txt"
+GROUP="https://rci.hpc.virginia.edu/filesplus/group.txt"
 g=$1
-u=$(curl -s $GROUP | sed -n "s/^${g}:.*://p" | awk -F, '{print $1}')
+u=$(curl -s $GROUP | sed -n "s/^${g}:.*://pi" | awk -F, '{print $1}')
 if [ -z "$u" ]; then
     echo "Cannot generate URL (group $g does not exist or no user in $g)"
     exit
