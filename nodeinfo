@@ -85,6 +85,9 @@ for i in ${!NODES[@]}; do
                 GPUMEMORY="16GB"
             fi
             ;;
+        A100)
+            GPUMEMORY="40GB"
+            ;;
         esac
     else
         GPUNAME="-"
