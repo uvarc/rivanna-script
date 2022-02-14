@@ -1,5 +1,6 @@
 #!/bin/bash
-# compile node info
+# Compile node info
+# Sync to /project/rivanna_software/public
 # Ruoshi Sun
 # 2021-03-09
 
@@ -79,11 +80,14 @@ for i in ${!NODES[@]}; do
             GPUMEMORY="11GB"
             ;;
         V100)
-            if [ "$CORE" = "40" ]; then
+            case $CORE in
+            40|36)
                 GPUMEMORY="32GB"
-            else
+                ;;
+            28)
                 GPUMEMORY="16GB"
-            fi
+                ;;
+            esac
             ;;
         A100)
             GPUMEMORY="40GB"
