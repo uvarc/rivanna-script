@@ -48,7 +48,7 @@ jupyter_lab)
 rstudio)
     URL="${URLPREFIX}/rnode/${HOST}/${PORT}/?"
     ;;
-uva_vscode)
+uva_vscode*)
     URL="${URLPREFIX}/rnode/${HOST}/${PORT}/?"
     ;;
 uva_*)
