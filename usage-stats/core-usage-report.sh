@@ -10,6 +10,7 @@ today=$(date +%Y-%m-%d)
 START=$1
 END=$2
 OUT_FILE=$3
+STATES="CANCELLED,COMPLETED,FAILED,NODE_FAIL,PREEMPTED,TIMEOUT,OUT_OF_MEMORY"
 CORE_USAGE_FILE=rivanna-corehours-${START}-${END}.csv
 ALLOC_FILE=rivanna-allocations-$today.txt
 ORG_FILE=rivanna-organizations-$today.txt
@@ -25,14 +26,21 @@ ORG_FILE=rivanna-organizations-$today.txt
 #done
 
 # get raw data
-sacct -n -a -X -S ${START} -E ${END} --format=account%50,cputimeraw |awk '{ counts[$1]++; totals[$1] += $2;} END { for (x in counts) { print x","totals[x]/3600; }}' > $CORE_USAGE_FILE
+#TZ=UTC sacct -n -a -X -S ${START} -E ${END} -s ${STATES} --format=account%50,cputimeraw | awk '$2' | awk '{ counts[$1]++; totals[$1] += $2;} END { for (x in counts) { print x","totals[x]/3600; }}' > $CORE_USAGE_FILE
+COLUMNS="user,account%50,cputimeraw,alloctres,alloccpus,partition,reserved"
+LABELS="${COLUMNS/"account%50"/Allocation}" 
+echo "$LABELS," | tr \, \| > $CORE_USAGE_FILE
+TZ=UTC sacct -p -n -a -X -S ${START} -E ${END} -s ${STATES} --format=${COLUMNS} >> $CORE_USAGE_FILE
 sudo /opt/mam/current/bin/mam-list-accounts > $ALLOC_FILE
 /opt/mam/current/bin/mam-list-organizations > $ORG_FILE 
 
+sed -i 's/Health_Volunteer Volunteer sponsored/Health_Volunteer_Volunteer_sponsored/g' $ALLOC_FILE
+sed -i 's/Health_Volunteer Volunteer sponsored/Health_Volunteer_Volunteer_sponsored/g' $ORG_FILE
+
 # create summary
-python core-usage-summary.py -c $CORE_USAGE_FILE -x $ORG_FILE -a $ALLOC_FILE -o $OUT_FILE
+core-usage-summary.py -c $CORE_USAGE_FILE -x $ORG_FILE -a $ALLOC_FILE -l "$LABELS" -o $OUT_FILE
 
 # clean up
-rm $CORE_USAGE_FILE 
-rm $ORG_FILE
-rm $ALLOC_FILE
+#rm $CORE_USAGE_FILE 
+#rm $ORG_FILE
+#rm $ALLOC_FILE
