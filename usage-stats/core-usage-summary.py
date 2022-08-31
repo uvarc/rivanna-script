@@ -19,11 +19,13 @@ def init_parser():
     parser = argparse.ArgumentParser(
         description='Parses SLURM core hour usage, mam account and mam organization information to create Rivanna usage stats')
     parser.add_argument('-a', '--allocations', required=True, help='file with allocation informaton')
-    parser.add_argument('-c', '--core-usage', required=True, help='file with core hour usage')
+    parser.add_argument('-u', '--usage', required=True, help='file with core hour usage')
+    parser.add_argument('-c', '--capacity', required=False, help='file with core and GPU device counts for each partition')
     parser.add_argument('-x', '--organizations', required=True, help='file with mam organization info')
     parser.add_argument('-o', '--output', required=True, help='output file')
     parser.add_argument('-g', '--groups', required=False, default='School')
-    parser.add_argument('-l', '--labels', required=True, default='Allocation,Total CPU hours', help='comma separated list of core usage columns')
+    parser.add_argument('-d', '--days', required=True, help='reporting period in days')    
+    parser.add_argument('-l', '--labels', required=False, default='Allocation,Total CPU hours', help='comma separated list of core usage columns')
     return parser
 
 def calc_gpu_hours(row):
@@ -33,17 +35,56 @@ def calc_gpu_hours(row):
         return 0.0
 
 def job_type(row):
-    if 'ood' in row['JobName']:
-        return f'interactive ({row["JobName"]})'
-    elif 'interactive' in row['JobName']:
-        return 'interactive (not OOD)'
+    jtype = row['JobName']
+    if jtype.startswith('ood_'):
+        jtype = f'interactive ({row["JobName"]})'
+    elif jtype.startswith('sys/dashboard'):
+        jtype = f'interactive (ood_{row["JobName"].split("/")[-1]})'
+    elif 'interactive' in jtype:
+        jtype = 'interactive (not OOD)'
     else:
-        return 'non-interactive slurm'
+        jtype = 'non-interactive slurm'
+    jtype = jtype.replace('rstudio_server', 'rstudio')
+    jtype = jtype.replace('jupyter_lab', 'jupyter')
+    return jtype
 
 def job_state(row):
     return row['state'].split(' ')[0]
 
-def merge_data(labels, usage_file, account_file, org_file, groups=['Allocation']):
+def gpu_devices(row):
+    devices = 0
+    pattern = r'gpu\:.*?\:(\d+)'
+    matches = re.findall(pattern,row['GRES'])
+    return sum([int(m) for m in matches])
+
+def utilization(row, cap_dict):
+    partition = row['partition']
+    if 'gpu' in partition:
+        util = row['Total GPU hours']/(cap_dict[partition]['GPU hours'])
+    else:
+        util = row['Total CPU hours']/(cap_dict[partition]['Core hours'])
+    return util
+
+def partition_type(row):
+    if row['partition'] in ['instructional', 'eqa-cs5014-18sp']:
+        return 'instructional'
+    elif row['partition'] in ['standard', 'parallel', 'largemem', 'dev', 'gpu', 'knl']:
+        return 'research'
+    else:
+        return 'condo'
+
+def merge_data(labels, usage_file, account_file, org_file, capacity_file, hours, groups=['Allocation']):
+    capacity_df = pd.read_csv(capacity_file, delimiter='|')
+    capacity_df['GPU devices'] = capacity_df.apply(lambda row: gpu_devices(row), axis=1) #capacity_df['GRES'].str.extract(r'gpu\:.*?\:(\d+).*').fillna(0).astype(int)
+    capacity_df = capacity_df.groupby(['PARTITION']).sum()
+    print (capacity_df)
+    print (hours, type(hours))
+    capacity_df['Core hours'] = capacity_df['CPUS'] * hours
+    capacity_df['GPU hours'] = capacity_df['GPU devices'] * hours
+    cap_dict = capacity_df.to_dict('index')    
+    print (capacity_df)
+    print (cap_dict)    
+
     labels = labels.split(',')
     #usage_df = pd.read_fwf(usage_file, widths=[11,51,11,11,11,11], names=labels) #, header=0, skiprows=7)
     usage_df = pd.read_csv(usage_file, delimiter="|")#r"\s+", names=labels) #, header=0, skiprows=7)
@@ -54,10 +95,14 @@ def merge_data(labels, usage_file, account_file, org_file, groups=['Allocation']
     usage_df['Total GPU hours'] = usage_df.apply(lambda row: calc_gpu_hours(row), axis=1)
     usage_df['state'] = usage_df.apply(lambda row: job_state(row), axis=1)
     usage_df['JobType'] = usage_df.apply(lambda row: job_type(row), axis=1)
+    usage_df['Utilization'] = usage_df.apply(lambda row: utilization(row, cap_dict), axis=1)
+    usage_df['PartitionType'] = usage_df.apply(lambda row: partition_type(row), axis=1)
     #usage_df = usage_df.groupby(['user','Allocation',]).sum().reset_index()
+    #active_users = usage_df.groupby(['user']).count()   
+
     org_groups = [g for g in groups if g in usage_df.columns.values]
     usage_df = usage_df.groupby(org_groups).sum().reset_index()
-    #print (usage_df.head())
+    print (usage_df.head())
 
     account_df = pd.read_csv(account_file, delimiter=r"\s+", header=0)
     org_df = pd.read_csv(org_file, delimiter=r"\s+", header=0, names=['Organization', 'School']) 
@@ -68,6 +113,7 @@ def merge_data(labels, usage_file, account_file, org_file, groups=['Allocation']
 
     accts_and_orgs = pd.merge(account_df, org_df, on='Organization', how='outer', suffixes=('_left', '_right'))
     combined = pd.merge(usage_df, accts_and_orgs, on='Allocation', how='left', suffixes=('_left', '_right'))
+    print (combined.columns.values)
     return combined
 
 
@@ -77,10 +123,11 @@ if __name__ == '__main__':
     agroups = list(set(args.groups.replace('|',',').split(',')))
     if 'Allocation' not in agroups:
         agroups.append('Allocation')
-    runs = args.groups.split('|')
-    df = merge_data(args.labels, args.core_usage, args.allocations, args.organizations, groups=agroups)
+    analysis = args.groups.split('|')
+    hours = float(args.days) * 24
+    df = merge_data(args.labels, args.usage, args.allocations, args.organizations, args.capacity, hours, groups=agroups)
     df.to_csv(args.output, index=False)
-    for r in runs:
+    for r in analysis:
         print (''.join(["#"]*80)) 
         print (f'Analyzing by {r}')
         groups = r.split(',') if args.groups != '' else ['Allocation']
@@ -95,3 +142,15 @@ if __name__ == '__main__':
         print ("------------------------------------")
         print (f"Total CPU Hours: {df['Total CPU hours'].sum():,.2f}")
         print (f"Total GPU Device Hours: {df['Total GPU hours'].sum():,.2f}")
+
+        groups = r.split(',') if args.groups != '' else ['User']
+    
+
+
+
+    #fname = f"activeusers.csv"
+    #print (fname)
+    #active_users = active_users[active_users['cputimeraw']>0]
+    #active_users.reset_index().to_csv(fname, index=False)
+    #print (active_users)
+    #print (active_users.sum())

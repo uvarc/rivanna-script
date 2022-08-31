@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [ "$#" -ne 3 ]; then
-    echo "Usage: `basename $0` YYYY-MM-DDThh:mm:ss YYYY-MM-DDThh:mm:ss outputfile"
+if [ "$#" -ne 4 ]; then
+    echo "Usage: `basename $0` YYYY-MM-DDThh:mm:ss YYYY-MM-DDThh:mm:ss outputfile days-in-period"
     exit 1
 fi
 
@@ -10,8 +10,10 @@ today=$(date +%Y-%m-%d)
 START=$1
 END=$2
 OUT_FILE=$3
+DAYS=$4
 STATES="CANCELLED,COMPLETED,FAILED,NODE_FAIL,PREEMPTED,TIMEOUT,OUT_OF_MEMORY"
 CORE_USAGE_FILE=rivanna-corehours-${START}-${END}.csv
+CAPACITY_FILE=rivanna-capacity-${START}-${END}.csv
 ALLOC_FILE=rivanna-allocations-$today.txt
 ORG_FILE=rivanna-organizations-$today.txt
 
@@ -32,6 +34,11 @@ LABELS="${COLUMNS/"account%50"/Allocation}"
 LABELS="${LABELS/"jobname%30"/JobName}"
 echo "$LABELS" | tr \, \| > $CORE_USAGE_FILE
 TZ=UTC sacct -P -n -a -X -S ${START} -E ${END} -s ${STATES} --format=${COLUMNS} >> $CORE_USAGE_FILE
+# remove "|" characters in jobnames that conflict with the  "|" column delimiter 
+sed -i 's/chr.*slurm/chr slurm/g' $CORE_USAGE_FILE
+
+sinfo -N --format="%R|%N|%T|%c|%G" > $CAPACITY_FILE
+
 sudo /opt/mam/current/bin/mam-list-accounts > $ALLOC_FILE
 /opt/mam/current/bin/mam-list-organizations > $ORG_FILE 
 
@@ -40,7 +47,7 @@ sed -i 's/Health_Volunteer Volunteer sponsored/Health_Volunteer_Volunteer_sponso
 sed -i 's/Health_Volunteer Volunteer sponsored/Health_Volunteer_Volunteer_sponsored/g' $ORG_FILE
 
 # create summary
-core-usage-summary.py -c $CORE_USAGE_FILE -x $ORG_FILE -a $ALLOC_FILE -l "$LABELS" -o $OUT_FILE -g "Allocation|partition|Organization|user|School|JobType|School,JobType|School,partition"
+core-usage-summary.py -d $DAYS -c $CAPACITY_FILE -u $CORE_USAGE_FILE -x $ORG_FILE -a $ALLOC_FILE -l "$LABELS" -o $OUT_FILE -g "Allocation|partition|Organization|user|School|JobType|School,JobType|School,partition|School,partition,JobType"
 # clean up
 #rm $CORE_USAGE_FILE 
 #rm $ORG_FILE

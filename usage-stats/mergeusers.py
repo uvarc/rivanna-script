@@ -39,11 +39,12 @@ schools = {'CLAS': ['e0:as', 's0:as', 's1:as', 's3:as', 'arts', 'global public h
            'SEHD': ['education', 'teaching'],
            #'RDS (Library)': ['e0:lb', 'library'],
            #'Health Sciences Library': ['hsl'],
-           'BII': ['biocomplexity'],
-           'COMM': ['e0:mc', 'commerce', 'mc-'],
+           'COMM': ['e0:mc', 'mcintire', 'commerce', 'mc-'],
            'SON': ['nursing'],
            'BATT': ['e0:cu-leadshp','batten'],
-           'PROV': ['pv-'],}
+           'ITS/RC': ['e0:rs-research computing'],
+           'PROV': ['pv-'],
+           'BII': ['e0:pv-bii', 's0:pv-bii', 'biocomplexity'],}
 
 def lookup_school(df):
     depthit = (s for s in schools for entry in schools[s] if entry in df['Dept'].lower())
