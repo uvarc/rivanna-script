@@ -90,7 +90,10 @@ for i in ${!NODES[@]}; do
             esac
             ;;
         A100)
-            GPUMEMORY="40GB"
+            case $MEMORY in
+            2000GB) GPUMEMORY="80GB" ;;
+            1000GB) GPUMEMORY="40GB" ;;
+            esac
             ;;
         esac
     else
