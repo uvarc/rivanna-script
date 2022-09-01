@@ -73,22 +73,25 @@ def partition_type(row):
     else:
         return 'condo'
 
+def get_pi(row):
+    members = row['Users']
+    pi = members.split("^")[-1].split(",")[0]#re.search(r'\^(.*?)($|\,)', members).group(0)
+    return pi
+
 def merge_data(labels, usage_file, account_file, org_file, capacity_file, hours, groups=['Allocation']):
     capacity_df = pd.read_csv(capacity_file, delimiter='|')
     capacity_df['GPU devices'] = capacity_df.apply(lambda row: gpu_devices(row), axis=1) #capacity_df['GRES'].str.extract(r'gpu\:.*?\:(\d+).*').fillna(0).astype(int)
     capacity_df = capacity_df.groupby(['PARTITION']).sum()
-    print (capacity_df)
-    print (hours, type(hours))
     capacity_df['Core hours'] = capacity_df['CPUS'] * hours
     capacity_df['GPU hours'] = capacity_df['GPU devices'] * hours
     cap_dict = capacity_df.to_dict('index')    
-    print (capacity_df)
-    print (cap_dict)    
+    print (capacity_df) 
 
     labels = labels.split(',')
     #usage_df = pd.read_fwf(usage_file, widths=[11,51,11,11,11,11], names=labels) #, header=0, skiprows=7)
     usage_df = pd.read_csv(usage_file, delimiter="|")#r"\s+", names=labels) #, header=0, skiprows=7)
     #print (usage_df.head())
+    new_cols = ['Total CPU hours', 'GPU devices', 'Total GPU hours', 'state', 'JobType', 'Utilization', 'PartitionType']
     usage_df['Total CPU hours'] = usage_df['cputimeraw']/3600 
     usage_df['GPU devices'] = usage_df['alloctres'].str.extract(r'gres/gpu=(\d+)').fillna(0).astype(int)#.apply(lambda row:get_gpu_devices(row), axis=1)
     #print (usage_df.head())
@@ -97,8 +100,6 @@ def merge_data(labels, usage_file, account_file, org_file, capacity_file, hours,
     usage_df['JobType'] = usage_df.apply(lambda row: job_type(row), axis=1)
     usage_df['Utilization'] = usage_df.apply(lambda row: utilization(row, cap_dict), axis=1)
     usage_df['PartitionType'] = usage_df.apply(lambda row: partition_type(row), axis=1)
-    #usage_df = usage_df.groupby(['user','Allocation',]).sum().reset_index()
-    #active_users = usage_df.groupby(['user']).count()   
 
     org_groups = [g for g in groups if g in usage_df.columns.values]
     usage_df = usage_df.groupby(org_groups).sum().reset_index()
@@ -109,11 +110,12 @@ def merge_data(labels, usage_file, account_file, org_file, capacity_file, hours,
     cols = account_df.columns.values
     cols[0] = "Allocation"
     account_df.columns = cols
-    account_df['PI'] = account_df['Users'].str.extract(r'.*?\^(.*?),.*')
+    account_df['PI'] = account_df.apply(lambda row: get_pi(row), axis=1)
+    print (account_df)
 
     accts_and_orgs = pd.merge(account_df, org_df, on='Organization', how='outer', suffixes=('_left', '_right'))
     combined = pd.merge(usage_df, accts_and_orgs, on='Allocation', how='left', suffixes=('_left', '_right'))
-    print (combined.columns.values)
+    print (combined)
     return combined
 
 
@@ -123,6 +125,7 @@ if __name__ == '__main__':
     agroups = list(set(args.groups.replace('|',',').split(',')))
     if 'Allocation' not in agroups:
         agroups.append('Allocation')
+    print (f"agroups={agroups}")
     analysis = args.groups.split('|')
     hours = float(args.days) * 24
     df = merge_data(args.labels, args.usage, args.allocations, args.organizations, args.capacity, hours, groups=agroups)

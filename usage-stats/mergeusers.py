@@ -32,8 +32,8 @@ report = os.path.join(path, 'Office_Hours_Attendees-report.xlsx')
 
 schools = {'CLAS': ['e0:as', 's0:as', 's1:as', 's3:as', 'arts', 'global public health', 'english','economics', 'psychology', 'environmental', 'politics', 'biology', 'chemistry'], 
            'SEAS': ['e0:en', 's0:en', 's1:en', 's2:en','engineer', 'systems', 'computer', 'materials'], 
-           'SOM': ['e0:interns and  resident','e0:md', 'som', 'global health', 'cphg', 'public health genomics', 'public health science', 'public health services', 'pharma', 'md-micr', 'biomed', 'infect', 'neuroscience', 'medicine', 'cardiovascular', 'cell bio', 'pediatrics', 'immunology', 'microbio'],
-           'SDS': ['data', 'dsi', 'sds'],
+           'SOM': ['e0:interns and  resident','e0:md', 'som', 'global health', 'cphg', 'physical therapy', 'public health genomics', 'public health science', 'public health services', 'pharma', 'md-micr', 'biomed', 'infect', 'neuroscience', 'medicine', 'cardiovascular', 'cell bio', 'pediatrics', 'immunology', 'microbio'],
+           'SDS': ['data', 'dsi', 'sds', 'e0:ds'],
            'DARD': ['e0:da', 'darden', 'business'],
            #'Provost\'s Office': ['provost'],
            'SEHD': ['education', 'teaching'],
@@ -42,9 +42,9 @@ schools = {'CLAS': ['e0:as', 's0:as', 's1:as', 's3:as', 'arts', 'global public h
            'COMM': ['e0:mc', 'mcintire', 'commerce', 'mc-'],
            'SON': ['nursing'],
            'BATT': ['e0:cu-leadshp','batten'],
-           'ITS/RC': ['e0:rs-research computing'],
-           'PROV': ['pv-'],
-           'BII': ['e0:pv-bii', 's0:pv-bii', 'biocomplexity'],}
+           'ITS/RC': ['e0:it-research computing', 'research-computing'],
+           'BII': ['e0:pv-bii', 's0:pv-bii', 'biocomplexity'],
+           'PROV': ['pv-'],}
 
 def lookup_school(df):
     depthit = (s for s in schools for entry in schools[s] if entry in df['Dept'].lower())

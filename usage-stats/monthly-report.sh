@@ -26,8 +26,8 @@ module load anaconda
 core-usage-report.sh ${FIRSTDAYMONTH}T00:00:00 ${LASTDAYMONTH}T23:59:59 corehours-${SYEAR}-${SMONTH}.csv $DAYS
 
 # filter cpurawtime>0 (5th column in corehours-${SYEAR}-${SMONTH}.csv, and get uids
-awk -F, '{ if ($5 > 0) print $4 }' corehours-${SYEAR}-${SMONTH}.csv | head
-awk -F, '{ if ($5 > 0) print $4 }' corehours-${SYEAR}-${SMONTH}.csv | sort -u > activeusers-UIDs-${SYEAR}-${SMONTH}.txt
+awk -F, '{ if ($2 > 0) print $1 }' corehours-${SYEAR}-${SMONTH}-user.csv | head
+awk -F, '{ if ($2 > 0) print $1 }' corehours-${SYEAR}-${SMONTH}-user.csv | sort -u > activeusers-UIDs-${SYEAR}-${SMONTH}.txt
 ldapreport.sh activeusers-UIDs-${SYEAR}-${SMONTH}.txt > activeusers-${SYEAR}-${SMONTH}.csv 
 module load anaconda/2019.10-py2.7
 mergeusers.py activeusers-${SYEAR}-${SMONTH}.csv
