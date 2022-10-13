@@ -114,6 +114,7 @@ def merge_data(labels, usage_file, account_file, org_file, capacity_file, hours,
     print (account_df)
 
     accts_and_orgs = pd.merge(account_df, org_df, on='Organization', how='outer', suffixes=('_left', '_right'))
+    print (accts_and_orgs)
     combined = pd.merge(usage_df, accts_and_orgs, on='Allocation', how='left', suffixes=('_left', '_right'))
     print (combined)
     return combined
