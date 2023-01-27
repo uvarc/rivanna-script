@@ -8,6 +8,7 @@ Python 3
 @author: khs3z
 """
 
+import numpy as np
 import pandas as pd
 import argparse
 import re
@@ -81,11 +82,12 @@ def get_pi(row):
 def merge_data(labels, usage_file, account_file, org_file, capacity_file, hours, groups=['Allocation']):
     capacity_df = pd.read_csv(capacity_file, delimiter='|')
     capacity_df['GPU devices'] = capacity_df.apply(lambda row: gpu_devices(row), axis=1) #capacity_df['GRES'].str.extract(r'gpu\:.*?\:(\d+).*').fillna(0).astype(int)
-    capacity_df = capacity_df.groupby(['PARTITION']).sum()
+    capacity_df = capacity_df.groupby(['PARTITION']).agg({"NODELIST":len, "CPUS":np.sum, "GPU devices": np.sum})
     capacity_df['Core hours'] = capacity_df['CPUS'] * hours
     capacity_df['GPU hours'] = capacity_df['GPU devices'] * hours
     cap_dict = capacity_df.to_dict('index')    
-    print (capacity_df) 
+    print (capacity_df)
+    capacity_df.to_csv(f"{capacity_file[:-4]}-summary.csv") 
 
     labels = labels.split(',')
     #usage_df = pd.read_fwf(usage_file, widths=[11,51,11,11,11,11], names=labels) #, header=0, skiprows=7)
