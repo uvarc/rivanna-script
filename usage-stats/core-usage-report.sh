@@ -47,7 +47,7 @@ sed -i 's/Health_Volunteer Volunteer sponsored/Health_Volunteer_Volunteer_sponso
 sed -i 's/Health_Volunteer Volunteer sponsored/Health_Volunteer_Volunteer_sponsored/g' $ORG_FILE
 
 # create summary
-core-usage-summary.py -d $DAYS -c $CAPACITY_FILE -u $CORE_USAGE_FILE -x $ORG_FILE -a $ALLOC_FILE -l "$LABELS" -o $OUT_FILE -g "Allocation|Allocation,Description|Allocation,Description,partition|partition|Organization|user|School|JobType|School,JobType|School,partition|School,partition,JobType"
+core-usage-summary.py -d $DAYS -c $CAPACITY_FILE -u $CORE_USAGE_FILE -x $ORG_FILE -a $ALLOC_FILE -l "$LABELS" -o $OUT_FILE -g "PI,School|Allocation,Description,PI,School|Allocation,Description,PI,School,partition|partition|Organization|user|School|JobType|School,JobType|School,partition|School,partition,JobType"
 # clean up
 #rm $CORE_USAGE_FILE 
 #rm $ORG_FILE
