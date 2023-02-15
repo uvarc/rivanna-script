@@ -35,7 +35,7 @@ function report {
 # put GPU nodes at the bottom
 # print memory in GB
 # replace KNL's 256 with 64 physical cores
-# RTX2080 -> RTX 2080 Ti
+# RTX2080 -> RTX2080Ti
     echo "Cores/Node,Memory/Node,Specialty Hardware,GPU memory/Device,GPU devices/Node,# of Nodes"
     for i in ${!ALL_NAME[@]}; do
         printf -- "%d,%s,%s,%s,%s,%s\n" \
@@ -45,7 +45,7 @@ function report {
     done | sort -t, -k3 | \
     awk -F, -v OFS=, '{if($3!="-") {sub(/^/, "GPU: ", $3); print} else print}' | \
     sed -e 's/^256,180GB,-/64,180GB,KNL/' \
-        -e 's/RTX2080/RTX 2080 Ti/g' \
+        -e 's/RTX2080/RTX2080Ti/g' \
         -e '/112GB/d'
 }
 
@@ -78,6 +78,9 @@ for i in ${!NODES[@]}; do
             ;;
         RTX2080)
             GPUMEMORY="11GB"
+            ;;
+        RTX3090)
+            GPUMEMORY="24GB"
             ;;
         V100)
             case $CORE in
