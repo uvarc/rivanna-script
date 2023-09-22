@@ -5,6 +5,7 @@ if [ $# -ne 1 ]; then
     exit 1
 fi
 URLPREFIX="https://rivanna-portal.hpc.virginia.edu"
+VNC="1.1.0"
 
 function unsupported {
     echo "$1 is not yet supported by this script. Sorry!"
@@ -34,25 +35,40 @@ if [ ! -e $DIR/connection.yml ]; then
     exit 1
 fi
 
-CONNECTION=$(sudo su - $USERNAME -c "cat $DIR/connection.yml")
-HOST=$(echo "$CONNECTION" | awk 'NR==1 {print $2}')
-PORT=$(echo "$CONNECTION" | awk 'NR==2 {print $2}')
-PASSWORD=$(echo "$CONNECTION" | awk 'NR==3 {print $2}')
-WEBSOCKET=$(echo "$CONNECTION" | awk 'NR==5 {print $2}')
+# assign variables host, port, password, websocket
+eval "$(sudo -i -u $USERNAME cat $DIR/connection.yml | sed 's/: /=/g')"
+
+[ -z "$host" ] && {
+    echo "Error: host not found"
+    exit 1
+}
+[ -z "$port" ] && {
+    echo "Error: port not found"
+    exit 1
+}
+[ -z "$password" ] && {
+    echo "Error: password not found"
+    exit 1
+}
+
 APP=$(basename $(realpath $DIR/../..))
 
 case $APP in
 jupyter_lab)
-    URL="${URLPREFIX}/node/${HOST}/${PORT}/lab"
+    URL="${URLPREFIX}/node/${host}/${port}/lab"
     ;;
 rstudio)
-    URL="${URLPREFIX}/rnode/${HOST}/${PORT}/?"
+    URL="${URLPREFIX}/rnode/${host}/${port}/?"
     ;;
 uva_vscode*)
-    URL="${URLPREFIX}/rnode/${HOST}/${PORT}/?"
+    URL="${URLPREFIX}/rnode/${host}/${port}/?"
     ;;
 uva_*)
-    URLVNC="${URLPREFIX}/pun/sys/dashboard/noVNC-1.0.0/vnc.html?utf8=%E2%9C%93&autoconnect=true&path=rnode%2F${HOST}%2F${WEBSOCKET}%2Fwebsockify&resize=remote&compressionsetting=6&qualitysetting=2&commit=Launch+"
+    [ -z "$websocket" ] && {
+        echo "Error: websocket not found"
+        exit 1
+    }
+    URLVNC="${URLPREFIX}/pun/sys/dashboard/noVNC-1.1.0/vnc.html?utf8=%E2%9C%93&autoconnect=true&path=rnode%2F${host}%2F${websocket}%2Fwebsockify&resize=remote&compressionsetting=6&qualitysetting=2&commit=Launch+"
     case $APP in
     uva_matlab)
         URL="${URLVNC}MATLAB"
@@ -76,7 +92,10 @@ uva_*)
     ;;
 *)
     unsupported $1
+    ;;
 esac
 
+echo
 echo $URL
-echo $PASSWORD
+echo
+echo $password
