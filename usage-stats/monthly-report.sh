@@ -1,13 +1,16 @@
 #!/bin/bash
 
-if [ "$#" -ne 3 ]; then
-    echo "Usage: `basename $0` YYYY MM DAYS"
+# update condition to account for FILTER arg
+if [ "$#" -ne 4 ]; then
+    echo "Usage: `basename $0` YYYY MM DAYS FILTER"
     exit 1
 fi
 
 SYEAR=$1
 SMONTH=$2
 DAYS=$3
+FILTER=$4 # new assignment
+
 SDAY=01
 FIRSTDAYMONTH=${SYEAR}-${SMONTH}-${SDAY}
 FIRSTNEXTMONTH=$(date -d "${SYEAR}${SMONTH}${SDAY}+1 month" +%Y-%m-%d)
@@ -23,7 +26,8 @@ su-transactions.py -f allocations.html -s ${SYEAR}-${SMONTH}-${SDAY} -e ${FIRSTN
 su-transactions.py -f allocations.html -s ${SYEAR}-${SMONTH}-${SDAY} -e ${FIRSTNEXTMONTH} -o newallocations-${SYEAR}-${SMONTH}-typeschool.csv -g "Type,School"
 
 module load anaconda
-core-usage-report.sh ${FIRSTDAYMONTH}T00:00:00 ${LASTDAYMONTH}T23:59:59 corehours-${SYEAR}-${SMONTH}.csv $DAYS
+core-usage-report.sh ${FIRSTDAYMONTH}T00:00:00 ${LASTDAYMONTH}T23:59:59 corehours-${SYEAR}-${SMONTH}.csv $DAYS $FILTER
+# added $FILTER argument 
 
 # filter cpurawtime>0 (5th column in corehours-${SYEAR}-${SMONTH}.csv, and get uids
 awk -F, '{ if ($2 > 0) print $1 }' corehours-${SYEAR}-${SMONTH}-user.csv | head
