@@ -148,7 +148,7 @@ if __name__ == '__main__':
 	analysis = args.groups.split('|')
 	hours = float(args.days) * 24
 	df = merge_data(args.labels, args.usage, args.allocations, args.organizations, args.capacity, hours, groups=agroups)
-	df.to_csv(args.output, index=False)
+	#df.to_csv(args.output, index=False)
 
 	for school in school_filters:
 		filter_by_school(df, school, filepath=args.path, fname=args.output)
