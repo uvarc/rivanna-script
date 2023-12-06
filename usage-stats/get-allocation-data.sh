@@ -12,8 +12,9 @@ sudo /opt/mam/current/bin/mam-list-funds --full --format csv|grep _${YEAR}-${MON
 sudo /opt/mam/current/bin/mam-list-accounts --full --format csv >> allocationsaccounts.csv
 
 awk -F'^' '{print $2}' allocationsaccounts.csv | awk -F'[,"]' '{print $1}' > allocationPIs.txt
-./ldapreport.sh allocationPIs.txt > allocationPIsFull.csv
+ldapreport.sh allocationPIs.txt > allocationPIsFull.csv
 ml anaconda/2019.10-py2.7
-python mergeusers.py allocationPIsFull.csv
-python generate-new-mam-allocations.py ${YEAR} ${MONTH}
+mergeusers.py allocationPIsFull.csv
+ml anaconda
+generate-new-mam-allocations.py ${YEAR} ${MONTH}
 

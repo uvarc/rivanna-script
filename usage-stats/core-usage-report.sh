@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # change condition to account for FILTER argument
-if [ "$#" -ne 5 ]; then
-    echo "Usage: `basename $0` YYYY-MM-DDThh:mm:ss YYYY-MM-DDThh:mm:ss outputfile days-in-period FILTER"
+if [ "$#" -ne 6 ]; then
+    echo "Usage: `basename $0` YYYY-MM-DDThh:mm:ss YYYY-MM-DDThh:mm:ss outputfile days-in-period filter outputpath"
     exit 1
 fi
 
@@ -13,6 +13,7 @@ END=$2
 OUT_FILE=$3
 DAYS=$4
 FILTER=$5
+OUTPUTPATH="$6"
 STATES="CANCELLED,COMPLETED,FAILED,NODE_FAIL,PREEMPTED,TIMEOUT,OUT_OF_MEMORY"
 CORE_USAGE_FILE=rivanna-corehours-${START}-${END}.csv
 CAPACITY_FILE=rivanna-capacity-${START}-${END}.csv
@@ -50,7 +51,7 @@ sed -i 's/Health_Volunteer Volunteer sponsored/Health_Volunteer_Volunteer_sponso
 
 # create summary
 # add FILTER argument to script call
-core-usage-summary.py -d $DAYS -c $CAPACITY_FILE -u $CORE_USAGE_FILE -x $ORG_FILE -a $ALLOC_FILE -l "$LABELS" -o $OUT_FILE -g "PI,School|Allocation,Description,PI,School|Allocation,Description,PI,School,partition|partition|Organization|user|School|JobType|School,JobType|School,partition|School,partition,JobType" -f $FILTER
+core-usage-summary.py -d $DAYS -c $CAPACITY_FILE -u $CORE_USAGE_FILE -x $ORG_FILE -a $ALLOC_FILE -l "$LABELS" -o $OUT_FILE -g "PI,School|Allocation,Description,PI,School|Allocation,Description,PI,School,partition|partition|Organization|user,School|School|JobType|School,JobType|School,partition|School,partition,JobType" -f $FILTER -p $OUTPUTPATH
 # clean up
 #rm $CORE_USAGE_FILE 
 #rm $ORG_FILE

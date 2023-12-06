@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import numpy as np
 import pandas as pd
 import argparse
@@ -20,7 +22,6 @@ def init_parser():
 	parser.add_argument('-l', '--labels', required=False, default='Allocation,Total CPU hours', help='comma separated list of core usage columns')
 	parser.add_argument('-f', '--filter', required=True, help='filter')
 	parser.add_argument('-p', '--path', required=False, help='file path')
-	# TODO: path argument may need to be added to bash scripts OR removed
 	return parser
 
 
@@ -125,17 +126,21 @@ def merge_data(labels, usage_file, account_file, org_file, capacity_file, hours,
 	return combined
 
 
-def filter_by_school(df: pd.DataFrame, school: str, filepath=".", fname="rivanna_stats") -> None:
-	path = filepath + school
+def filter_by_school(df: pd.DataFrame, school: str, filepath=".", fname="rivanna-stats") -> None:
+	path = os.path.join(filepath, school)
 	os.makedirs(f"{path}", exist_ok=True)
 	# year and date in output file : rivanna-stats-YEAR-DATE
-	df[df["School"] == school].to_csv(f"{path}/{fname}", index=False)
+	if school == "all" or "School" not in df.columns:
+		df.to_csv(f"{path}/{fname}", index=False)
+	else:
+		df[df["School"] == school].to_csv(f"{path}/{fname}", index=False)
 
 
 if __name__ == '__main__':
 	parser = init_parser()
 	args = parser.parse_args()
-	school_filters = args.filter.split(",")  # initialize filter variable
+	school_filters = args.filter.split(",") # initialize filter variable
+	if 'all' not in school_filters: school_filters.append('all')
 	agroups = list(set(args.groups.replace('|', ',').split(',')))
 	if 'Allocation' not in agroups:
 		agroups.append('Allocation')
@@ -146,23 +151,26 @@ if __name__ == '__main__':
 	df.to_csv(args.output, index=False)
 
 	for school in school_filters:
-		filter_by_school(df, school, filepath=args.path)
+		filter_by_school(df, school, filepath=args.path, fname=args.output)
 
 	for r in analysis:
 		print(''.join(["#"] * 80))
-		print(f'Analyzing by {r}')
 		groups = r.split(',') if args.groups != '' else ['Allocation']
+		print(f'Analyzing by {r}, {groups}')
 		for school in school_filters:
-			sum_df = df.groupby(groups).sum().reset_index()  # filter
+			sum_df = df.groupby(groups).sum().reset_index()  # does this need to be inside inner loop
 			ftrunk, ext = os.path.splitext(args.output)
 			fname = f"{ftrunk}-{''.join(groups)}-{school}{ext}"
 			print(fname)
-			if "School" not in sum_df.columns:
-				continue
+			#if "School" not in sum_df.columns:
+			#	continue
 			filter_by_school(sum_df, school, filepath=args.path, fname=fname)
-			print(sum_df)
-			print(sum_df.sum())
-			print("------------------------------------")
-			print(f"Total CPU Hours: {df['Total CPU hours'].sum():,.2f}")
-			print(f"Total GPU Device Hours: {df['Total GPU hours'].sum():,.2f}")
+			
+			# These print statements are meaningless if repeated on the same unfiltered sum_df
+			# print(sum_df)
+			# print(sum_df.sum())
+			# print("------------------------------------")
+			# print(f"Total CPU Hours: {df['Total CPU hours'].sum():,.2f}")
+			# print(f"Total GPU Device Hours: {df['Total GPU hours'].sum():,.2f}")
+			
 			groups = r.split(',') if args.groups != '' else ['User']
