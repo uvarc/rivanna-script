@@ -35,7 +35,7 @@ def main(organization_file: str) -> None:
 				if "---" not in file:
 					organization, code = pattern.split(line.strip())
 					temp_file.write(f"{organization},{lookup.get(code, code)}")
-	shutil.move(temp_file, organization_file)
+	shutil.move(temp_file.name, organization_file)
 
 
 if __name__ == "__main__":
