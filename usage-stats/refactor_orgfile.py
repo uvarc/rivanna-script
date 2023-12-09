@@ -1,3 +1,5 @@
+#!/bin/python
+
 import argparse
 import shutil
 import sys
@@ -31,7 +33,7 @@ def main(organization_file: str) -> None:
 	with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp_file:
 		with open(organization_file, 'r') as file:
 			for line in file:
-				if "---" not in line:
+				if "-----" not in line:
 					organization, code = pattern.split(line.strip())
 					temp_file.write(f"{organization},{lookup.get(code, code)}\n")
 	shutil.move(temp_file.name, organization_file)
