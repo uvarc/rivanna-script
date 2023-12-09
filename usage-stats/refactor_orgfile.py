@@ -28,20 +28,18 @@ def init_parser() -> argparse.ArgumentParser:
 
 def main(organization_file: str) -> None:
 	pattern = re.compile(r"\s+")
-
 	with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp_file:
 		with open(organization_file, 'r') as file:
 			for line in file:
-				if "---" not in file:
+				if "---" not in line:
 					organization, code = pattern.split(line.strip())
-					temp_file.write(f"{organization},{lookup.get(code, code)}")
+					temp_file.write(f"{organization},{lookup.get(code, code)}\n")
 	shutil.move(temp_file.name, organization_file)
 
 
 if __name__ == "__main__":
 	parser = init_parser()
 	args = parser.parse_args()
-
 	try:
 		main(args.organization_file)
 	except Exception as e:
