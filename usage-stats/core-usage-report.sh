@@ -43,7 +43,8 @@ sed -i 's/chr.*slurm/chr slurm/g' $CORE_USAGE_FILE
 sinfo -N --format="%R|%N|%T|%c|%G" > $CAPACITY_FILE
 
 sudo /opt/mam/current/bin/mam-list-accounts > $ALLOC_FILE
-/opt/mam/current/bin/mam-list-organizations > $ORG_FILE 
+/opt/mam/current/bin/mam-list-organizations > $ORG_FILE
+python refactor-orgfile.py $ORG_FILE > $ORG_FILE
 
 # fix MAM annotation
 sed -i 's/Health_Volunteer Volunteer sponsored/Health_Volunteer_Volunteer_sponsored/g' $ALLOC_FILE
