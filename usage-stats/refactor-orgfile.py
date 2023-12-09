@@ -7,19 +7,21 @@ import re
 import tempfile
 from typing import Dict
 
-lookup: Dict[str, str] = {"BATT": "BA",
-			"BII": "BI",
-			"CLAS": "AS",
-			"COMM": "MC",
-			"DARD": "DA",
-			"ITS/RC": "RC",
-			"LAW": "LW",
-			"PROV/VPR": "PV",
-			"SDS": "DS",
-			"SEAS": "EN",
-			"SEHD": "ED",
-			"SOM": "MD",
-			"Other": "Other"}
+lookup: Dict[str, str] = {
+	"BATT": "BA",
+	"BII": "BI",
+	"CLAS": "AS",
+	"COMM": "MC",
+	"DARD": "DA",
+	"ITS/RC": "RC",
+	"LAW": "LW",
+	"PROV/VPR": "PV",
+	"SDS": "DS",
+	"SEAS": "EN",
+	"SEHD": "ED",
+	"SOM": "MD",
+	"Other": "Other"
+}
 
 
 def init_parser() -> argparse.ArgumentParser:
@@ -35,7 +37,8 @@ def main(organization_file: str) -> None:
 			for line in file:
 				if "-----" not in line:
 					organization, code = pattern.split(line.strip())
-					temp_file.write(f"{organization} {lookup.get(code, code)}\n")  # consider change to comma separation to avoid domain specificity
+					temp_file.write(
+						f"{organization} {lookup.get(code, code)}\n")  # consider change to comma separation to avoid domain specificity
 	shutil.move(temp_file.name, organization_file)
 
 
