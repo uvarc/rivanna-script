@@ -35,6 +35,6 @@ core-usage-report.sh ${FIRSTDAYMONTH}T00:00:00 ${LASTDAYMONTH}T23:59:59 corehour
 # filter cpurawtime>0 (5th column in corehours-${SYEAR}-${SMONTH}.csv, and get uids
 #awk -F, '{ if ($2 > 0) print $1 }' all/corehours-${SYEAR}-${SMONTH}-userSchool-all.csv | head
 awk -F, '{ if ($2 > 0) print $1 }' all/corehours-${SYEAR}-${SMONTH}-userSchool-all.csv | sort -u > activeusers-UIDs-${SYEAR}-${SMONTH}.txt
-ldapreport.sh activeusers-UIDs-${SYEAR}-${SMONTH}.txt > activeusers-${SYEAR}-${SMONTH}.csv 
+ldapreport.sh activeusers-UIDs-${SYEAR}-${SMONTH}.txt > ${OUTPUTPATH}/activeusers-${SYEAR}-${SMONTH}.csv
 module load anaconda/2019.10-py2.7
-mergeusers.py activeusers-${SYEAR}-${SMONTH}.csv
+mergeusers.py ${OUTPUTPATH}/activeusers-${SYEAR}-${SMONTH}.csv
