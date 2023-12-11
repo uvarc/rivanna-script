@@ -15,10 +15,10 @@ DAYS=$4
 FILTER=$5
 OUTPUTPATH="$6"
 STATES="CANCELLED,COMPLETED,FAILED,NODE_FAIL,PREEMPTED,TIMEOUT,OUT_OF_MEMORY"
-CORE_USAGE_FILE=rivanna-corehours-${START}-${END}.csv
-CAPACITY_FILE=rivanna-capacity-${START}-${END}.csv
-ALLOC_FILE=rivanna-allocations-$today.txt
-ORG_FILE=rivanna-organizations-$today.txt
+CORE_USAGE_FILE=${OUTPUTPATH}/rivanna-corehours-${START}-${END}.csv
+CAPACITY_FILE=${OUTPUTPATH}/rivanna-capacity-${START}-${END}.csv
+ALLOC_FILE=${OUTPUTPATH}/rivanna-allocations-$today.txt
+ORG_FILE=${OUTPUTPATH}/rivanna-organizations-$today.txt
 
 #if [ -f $CORE_USAGE_FILE ]; then
 #   rm $CORE_USAGE_FILE
