@@ -20,6 +20,9 @@ lookup: Dict[str, str] = {
 	"SEAS": "EN",
 	"SEHD": "ED",
 	"SOM": "MD",
+	"SCPS": "CP",
+	"ARCH": "AR",
+	"NURS": "NR",
 	"Other": "Other"
 }
 
