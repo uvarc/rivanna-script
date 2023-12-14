@@ -5,9 +5,8 @@ import shutil
 import sys
 import re
 import tempfile
-from typing import Dict
 
-lookup: Dict[str, str] = {
+lookup = {
 	"BATT": "BA",
 	"BII": "BI",
 	"CLAS": "AS",

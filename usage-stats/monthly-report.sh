@@ -21,20 +21,20 @@ echo "Writing to $OUTPUTPATH"
 
 module purge
 module load anaconda/2019.10-py2.7
-newusers-report.sh ${SYEAR} ${SMONTH} newusers-${SYEAR}-${SMONTH}.csv
+newusers-report.sh ${SYEAR} ${SMONTH} ${OUTPUTPATH}/newusers-${SYEAR}-${SMONTH}.csv ${OUTPUTPATH}
 
-get-allocation-data.sh ${SYEAR} ${SMONTH}
+get-allocation-data.sh ${SYEAR} ${SMONTH} ${OUTPUTPATH}
 #su-transactions.py -f allocations.html -s ${SYEAR}-${SMONTH}-${SDAY} -e ${FIRSTNEXTMONTH} -o newallocations-${SYEAR}-${SMONTH}.csv
 #su-transactions.py -f allocations.html -s ${SYEAR}-${SMONTH}-${SDAY} -e ${FIRSTNEXTMONTH} -o newallocations-${SYEAR}-${SMONTH}-schooltype.csv -g "School,Type"
 #su-transactions.py -f allocations.html -s ${SYEAR}-${SMONTH}-${SDAY} -e ${FIRSTNEXTMONTH} -o newallocations-${SYEAR}-${SMONTH}-typeschool.csv -g "Type,School"
 
 module load anaconda
-core-usage-report.sh ${FIRSTDAYMONTH}T00:00:00 ${LASTDAYMONTH}T23:59:59 corehours-${SYEAR}-${SMONTH}.csv $DAYS $FILTER $OUTPUTPATH
+core-usage-report.sh ${FIRSTDAYMONTH}T00:00:00 ${LASTDAYMONTH}T23:59:59 ${OUTPUTPATH}/corehours-${SYEAR}-${SMONTH}.csv $DAYS $FILTER $OUTPUTPATH
 # added $FILTER argument 
 
 # filter cpurawtime>0 (5th column in corehours-${SYEAR}-${SMONTH}.csv, and get uids
 #awk -F, '{ if ($2 > 0) print $1 }' all/corehours-${SYEAR}-${SMONTH}-userSchool-all.csv | head
-awk -F, '{ if ($2 > 0) print $1 }' all/corehours-${SYEAR}-${SMONTH}-userSchool-all.csv | sort -u > ${OUTPUTPATH}/activeusers-UIDs-${SYEAR}-${SMONTH}.txt
-ldapreport.sh activeusers-UIDs-${SYEAR}-${SMONTH}.txt > ${OUTPUTPATH}/activeusers-${SYEAR}-${SMONTH}.csv
+awk -F, '{ if ($2 > 0) print $1 }' ${OUTPUTPATH}/all/corehours-${SYEAR}-${SMONTH}-userSchool-all.csv | sort -u > ${OUTPUTPATH}/activeusers-UIDs-${SYEAR}-${SMONTH}.txt
+ldapreport.sh ${OUTPUTPATH}/activeusers-UIDs-${SYEAR}-${SMONTH}.txt > ${OUTPUTPATH}/activeusers-${SYEAR}-${SMONTH}.csv
 module load anaconda/2019.10-py2.7
-mergeusers.py activeusers-${SYEAR}-${SMONTH}.csv
+mergeusers.py ${OUTPUTPATH}/activeusers-${SYEAR}-${SMONTH}.csv
