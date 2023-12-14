@@ -25,10 +25,11 @@ import sys
 path = '' #'/Users/khs3z/Documents/ARCS/Annual Reports/Office Hours/'
 #uidfile = os.path.join(path, 'rivanna-newusers-full-2021-Mar.txt')#'OfficeHoursUserInfo.csv')
 uidfile = sys.argv[1]
+output_path = sys.argv[2]
 #userfile = os.path.join(path, 'rivanna-users-2020-Oct.csv') #'Office Hours Attendees.csv')
-outputfile = os.path.join(path, 'Combined_'+os.path.basename(uidfile))
-officehours = os.path.join(path, 'Combined_Office Hours Attendees-curated.csv')
-report = os.path.join(path, 'Office_Hours_Attendees-report.xlsx')
+outputfile = os.path.join(path, f'{output_path}/Combined_'+os.path.basename(uidfile))
+officehours = os.path.join(path, f'{output_path}/Combined_Office Hours Attendees-curated.csv')
+report = os.path.join(path, f'{output_path}/Office_Hours_Attendees-report.xlsx')
 
 schools = {'AS': ['e0:as', 's0:as', 's1:as', 's3:as', 'arts', 'global public health', 'english','economics', 'psychology', 'environmental', 'politics', 'biology', 'chemistry'], 
            'EN': ['e0:en', 's0:en', 's1:en', 's2:en','engineer', 'systems', 'computer', 'materials'], 
@@ -73,6 +74,6 @@ uid_df = pd.read_csv(uidfile, names=["UserID", "Lastname", "Firstname", "Affilia
 #print (combined.head())
 
 uid_df['School'] = uid_df.apply(lookup_school, axis=1)
-uid_df.to_csv(os.path.join(path,outputfile))
-print (uid_df)
-print ('-------------------------------------------')
+uid_df.to_csv(os.path.join(path, outputfile))
+print(uid_df)
+print('-------------------------------------------')
