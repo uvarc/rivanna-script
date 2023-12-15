@@ -27,7 +27,7 @@ path = '' #'/Users/khs3z/Documents/ARCS/Annual Reports/Office Hours/'
 uidfile = sys.argv[1]
 output_path = sys.argv[2]
 #userfile = os.path.join(path, 'rivanna-users-2020-Oct.csv') #'Office Hours Attendees.csv')
-outputfile = os.path.join(path, f'{output_path}/Combined_'+os.path.basename(uidfile))
+outputfile = os.path.join(path, f'{output_path}/Combined_{os.path.basename(uidfile)}')
 officehours = os.path.join(path, f'{output_path}/Combined_Office Hours Attendees-curated.csv')
 report = os.path.join(path, f'{output_path}/Office_Hours_Attendees-report.xlsx')
 
