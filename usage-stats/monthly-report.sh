@@ -29,7 +29,7 @@ get-allocation-data.sh ${SYEAR} ${SMONTH} ${OUTPUTPATH}
 #su-transactions.py -f allocations.html -s ${SYEAR}-${SMONTH}-${SDAY} -e ${FIRSTNEXTMONTH} -o newallocations-${SYEAR}-${SMONTH}-typeschool.csv -g "Type,School"
 
 module load anaconda
-core-usage-report.sh ${FIRSTDAYMONTH}T00:00:00 ${LASTDAYMONTH}T23:59:59 ${OUTPUTPATH}/corehours-${SYEAR}-${SMONTH}.csv $DAYS $FILTER $OUTPUTPATH
+core-usage-report.sh ${FIRSTDAYMONTH}T00:00:00 ${LASTDAYMONTH}T23:59:59 corehours-${SYEAR}-${SMONTH}.csv $DAYS $FILTER $OUTPUTPATH
 # added $FILTER argument 
 
 # filter cpurawtime>0 (5th column in corehours-${SYEAR}-${SMONTH}.csv, and get uids
