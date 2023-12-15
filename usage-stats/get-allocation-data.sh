@@ -14,7 +14,7 @@ sudo /opt/mam/current/bin/mam-list-accounts --full --format csv >> ${OUTPUTPATH}
 
 awk -F'^' '{print $2}' ${OUTPUTPATH}/allocationsaccounts.csv | awk -F'[,"]' '{print $1}' > ${OUTPUTPATH}/allocationPIs.txt
 ldapreport.sh ${OUTPUTPATH}/allocationPIs.txt > ${OUTPUTPATH}/allocationPIsFull.csv
-ml anaconda/2019.10-py2.7
+ml anaconda
 mergeusers.py ${OUTPUTPATH}/allocationPIsFull.csv ${OUTPUTPATH}
 ml anaconda
 generate-new-mam-allocations.py ${YEAR} ${MONTH} ${OUTPUTPATH}

@@ -20,7 +20,7 @@ echo "Reporting $FIRSTDAYMONTH through $LASTDAYMONTH"
 echo "Writing to $OUTPUTPATH"
 
 module purge
-module load anaconda/2019.10-py2.7
+module load anaconda
 newusers-report.sh ${SYEAR} ${SMONTH} ${OUTPUTPATH}/newusers-${SYEAR}-${SMONTH}.csv ${OUTPUTPATH}
 
 get-allocation-data.sh ${SYEAR} ${SMONTH} ${OUTPUTPATH}
@@ -36,5 +36,5 @@ core-usage-report.sh ${FIRSTDAYMONTH}T00:00:00 ${LASTDAYMONTH}T23:59:59 ${OUTPUT
 #awk -F, '{ if ($2 > 0) print $1 }' all/corehours-${SYEAR}-${SMONTH}-userSchool-all.csv | head
 awk -F, '{ if ($2 > 0) print $1 }' ${OUTPUTPATH}/all/corehours-${SYEAR}-${SMONTH}-userSchool-all.csv | sort -u > ${OUTPUTPATH}/activeusers-UIDs-${SYEAR}-${SMONTH}.txt
 ldapreport.sh ${OUTPUTPATH}/activeusers-UIDs-${SYEAR}-${SMONTH}.txt > ${OUTPUTPATH}/activeusers-${SYEAR}-${SMONTH}.csv
-module load anaconda/2019.10-py2.7
+module load anaconda
 mergeusers.py ${OUTPUTPATH}/activeusers-${SYEAR}-${SMONTH}.csv ${OUTPUTPATH}
