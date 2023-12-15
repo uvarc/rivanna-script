@@ -30,5 +30,6 @@ echo ---------------------------------
 
 ldapreport.sh $USERIDS > $OUTPUTFILE
 
+ml anaconda
 mergeusers.py $OUTPUTFILE $OUTPUTPATH
 #sacctmgr list associations format=Account%30,User | uniq > $USERLIST
