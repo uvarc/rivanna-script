@@ -10,7 +10,12 @@ while :; do
     PORT="`shuf -i $LOWERPORT-$UPPERPORT -n 1`"
     ss -lpn | grep -q ":$PORT " || break
 done
-echo $PORT
+echo "Instructions:
+1. run this script on OOD Desktop or FastX
+2. open Firefox
+3. in the address bar enter:
+localhost:$PORT
+"
 
 MYTMP=`mktemp -d`
 export RSTUDIO_CONFIG_DIR="$MYTMP"
