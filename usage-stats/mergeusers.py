@@ -1,13 +1,11 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import print_function
+
 """
 Created on Sun Sep 13 21:32:40 2020
 
 @author: khs3z
 """
-
-#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
 Created on Fri May  8 09:52:13 2020
@@ -18,33 +16,31 @@ Created on Fri May  8 09:52:13 2020
 
 import pandas as pd
 import os
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
+# import matplotlib.pyplot as plt
+# from matplotlib.gridspec import GridSpec
 import sys
 
-path = '' #'/Users/khs3z/Documents/ARCS/Annual Reports/Office Hours/'
-#uidfile = os.path.join(path, 'rivanna-newusers-full-2021-Mar.txt')#'OfficeHoursUserInfo.csv')
-uidfile = sys.argv[1]
-#userfile = os.path.join(path, 'rivanna-users-2020-Oct.csv') #'Office Hours Attendees.csv')
-outputfile = os.path.join(path, 'Combined_'+os.path.basename(uidfile))
-officehours = os.path.join(path, 'Combined_Office Hours Attendees-curated.csv')
-report = os.path.join(path, 'Office_Hours_Attendees-report.xlsx')
 
-schools = {'AS': ['e0:as', 's0:as', 's1:as', 's3:as', 'arts', 'global public health', 'english','economics', 'psychology', 'environmental', 'politics', 'biology', 'chemistry'], 
+uidfile = sys.argv[1]
+output_path = sys.argv[2]
+outputfile = f"{output_path}/Combined_{os.path.basename(uidfile)}"
+officehours = f"{output_path}/Combined_Office Hours Attendees-curated.csv"
+report = f"{output_path}/Office_Hours_Attendees-report.xlsx"
+
+schools = {'AS': ['e0:as', 's0:as', 's1:as', 's3:as', 'arts', 'global public health', 'english','economics', 'psychology', 'environmental', 'politics', 'biology', 'chemistry'],
            'EN': ['e0:en', 's0:en', 's1:en', 's2:en','engineer', 'systems', 'computer', 'materials'], 
            'MD': ['e0:interns and  resident','e0:md', 'som', 'global health', 'cphg', 'physical therapy', 'public health genomics', 'public health science', 'public health services', 'pharma', 'md-micr', 'biomed', 'infect', 'neuroscience', 'medicine', 'cardiovascular', 'cell bio', 'pediatrics', 'immunology', 'microbio'],
            'DS': ['data', 'dsi', 'sds', 'e0:ds'],
            'DA': ['da:', 'e0:da', 'darden', 'business'],
-           #'Provost\'s Office': ['provost'],
            'ED': ['ed:', 'education', 'teaching'],
-           #'RDS (Library)': ['e0:lb', 'library'],
-           #'Health Sciences Library': ['hsl'],
            'MC': ['e0:mc', 'mcintire', 'commerce', 'mc-'],
-           'MD': ['nursing'],
            'BA': ['e0:cu-leadshp','batten'],
            'RC': ['e0:it-research computing', 'research-computing'],
            'BI': ['e0:pv-bii', 's0:pv-bii', 'biocomplexity'],
-           'PV': ['pv-'],}
+           'PV': ['pv-'],
+           'CP': ['school for continuing and professional studies'],
+           'AR': ['architecture'],
+           'NR': ['nursing']}
 
 def lookup_school(df):
     depthit = (s for s in schools for entry in schools[s] if entry in df['Dept'].lower())
@@ -60,16 +56,16 @@ def lookup_school(df):
 
 
 uid_df = pd.read_csv(uidfile, names=["UserID", "Lastname", "Firstname", "Affiliation", "Status"])
-#uid_df.set_index([0]);
-#print (uid_df.head())
+# uid_df.set_index([0]);
+# print (uid_df.head())
 
-#user_df = pd.read_csv(userfile, delimiter=',', header=None, names=["UserID","Active","CommonName","PhoneNumber","EmailAddress","DefaultAccount","Description","CreationTime","ModificationTime","Deleted","RequestId","TransactionId"])
-#print (user_df.head())
+# user_df = pd.read_csv(userfile, delimiter=',', header=None, names=["UserID","Active","CommonName","PhoneNumber","EmailAddress","DefaultAccount","Description","CreationTime","ModificationTime","Deleted","RequestId","TransactionId"])
+# print (user_df.head())
 
-#combined = pd.merge(user_df, uid_df, on='UserID', how='left', suffixes=('_left', '_right'))
-#print (combined.head())
+# combined = pd.merge(user_df, uid_df, on='UserID', how='left', suffixes=('_left', '_right'))
+# print (combined.head())
 
 uid_df['School'] = uid_df.apply(lookup_school, axis=1)
-uid_df.to_csv(os.path.join(path,outputfile))
-print (uid_df)
-print ('-------------------------------------------')
+uid_df.to_csv(outputfile)
+print(uid_df)
+print('-------------------------------------------')

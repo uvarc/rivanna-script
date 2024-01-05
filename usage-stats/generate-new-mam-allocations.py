@@ -16,14 +16,15 @@ if __name__ == "__main__":
 	try:
 		year = sys.argv[1]
 		month = sys.argv[2]
+		output_path = sys.argv[3]
 	except IndexError:
-		print("Usage: python [script] YEAR MONTH")
+		print("Usage: python [script] YEAR MONTH OUTPUT_PATH")
 		raise OSError
-	allocation_accounts_df = pd.read_csv("allocationsaccounts.csv")
-	combined_pis_df = pd.read_csv("Combined_allocationPIsFull.csv")
-	allocations_year_month_df = pd.read_csv(f"allocations-{year}-{month}.csv")
+	allocation_accounts_df = pd.read_csv(f"{output_path}/allocationsaccounts.csv")
+	combined_pis_df = pd.read_csv(f"{output_path}/Combined_allocationPIsFull.csv")
+	allocations_year_month_df = pd.read_csv(f"{output_path}/allocations-{year}-{month}.csv")
 	print(allocations_year_month_df.columns)
 	allocation_accounts_df["PI"] = create_pis_series(allocation_accounts_df["Users"])
 	merged_df = pd.merge(allocation_accounts_df, combined_pis_df, left_on='PI', right_on='UserID', how='left')
 	merged_df = pd.merge(allocations_year_month_df, merged_df, on="Name", how="left")
-	merged_df.to_csv(f"new-mam-allocations-{year}-{month}.csv")
+	merged_df.to_csv(f"{output_path}/new-mam-allocations-{year}-{month}.csv")

@@ -15,10 +15,10 @@ DAYS=$4
 FILTER=$5
 OUTPUTPATH="$6"
 STATES="CANCELLED,COMPLETED,FAILED,NODE_FAIL,PREEMPTED,TIMEOUT,OUT_OF_MEMORY"
-CORE_USAGE_FILE=rivanna-corehours-${START}-${END}.csv
-CAPACITY_FILE=rivanna-capacity-${START}-${END}.csv
-ALLOC_FILE=rivanna-allocations-$today.txt
-ORG_FILE=rivanna-organizations-$today.txt
+CORE_USAGE_FILE=${OUTPUTPATH}/rivanna-corehours-${START}-${END}.csv
+CAPACITY_FILE=${OUTPUTPATH}/rivanna-capacity-${START}-${END}.csv
+ALLOC_FILE=${OUTPUTPATH}/rivanna-allocations-$today.txt
+ORG_FILE=${OUTPUTPATH}/rivanna-organizations-$today.txt
 
 #if [ -f $CORE_USAGE_FILE ]; then
 #   rm $CORE_USAGE_FILE
@@ -43,7 +43,8 @@ sed -i 's/chr.*slurm/chr slurm/g' $CORE_USAGE_FILE
 sinfo -N --format="%R|%N|%T|%c|%G" > $CAPACITY_FILE
 
 sudo /opt/mam/current/bin/mam-list-accounts > $ALLOC_FILE
-/opt/mam/current/bin/mam-list-organizations > $ORG_FILE 
+/opt/mam/current/bin/mam-list-organizations > $ORG_FILE
+refactor-orgfile.py $ORG_FILE # refactor organization acronyms
 
 # fix MAM annotation
 sed -i 's/Health_Volunteer Volunteer sponsored/Health_Volunteer_Volunteer_sponsored/g' $ALLOC_FILE
