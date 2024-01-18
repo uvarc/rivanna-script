@@ -3,7 +3,10 @@
 # Ruoshi Sun
 # 2024-01-18
 
-echo "Partition,Purpose,Max time / job,Max nodes / job,Max cores / job,Max cores / node,Default memory / core,Max memory / node / job,SU Charge Rate"
+CSV=qinfo.csv
+
+echo "Partition,Purpose,Max time / job,Max nodes / job,Max cores / job,Max cores / node,Default memory / core,Max memory / node / job,SU Charge Rate" > $CSV
+
 for p in standard parallel largemem gpu dev; do
     # MaxTime, MaxNodes, DefMemPerCPU
     eval $(scontrol show partition -o $p|tr ' ' '\n')
@@ -60,5 +63,5 @@ for p in standard parallel largemem gpu dev; do
     dev) Purpose="For quick tests" ;;
     esac
 
-    echo "$p,$Purpose,$MaxTime,$MaxNodes,$MaxCoresPerJob,$MaxCoresPerNode,$DefMemPerCPU,$MaxMemPerNode,$SUCharge"
+    echo "$p,$Purpose,$MaxTime,$MaxNodes,$MaxCoresPerJob,$MaxCoresPerNode,$DefMemPerCPU,$MaxMemPerNode,$SUCharge" >>$CSV
 done
