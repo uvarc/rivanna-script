@@ -45,7 +45,15 @@ for p in standard parallel largemem gpu dev; do
     *) MaxCoresPerNode=$((MaxCoresPerNode - 3)) ;;
     esac
 
-    MaxMemPerNode="$(sinfo -p $p -ho '%n %m'|sort -nk2|tail -1|awk '{printf "%d\n", $2/1024}')GB"
+    # MaxMemPerNode
+    case $p in
+    largemem)
+        MaxMemPerNode="$((MaxMemPerCPU * MaxCoresPerJob / 1024))GB"
+        ;;
+    *)
+        MaxMemPerNode="$(sinfo -p $p -ho '%n %m'|sort -nk2|tail -1|awk '{printf "%d\n", $2/1024}')GB"
+        ;;
+    esac
 
     # SU charge rate
     case $p in
