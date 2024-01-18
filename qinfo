@@ -47,6 +47,9 @@ for p in standard parallel largemem gpu dev; do
 
     # MaxMemPerNode
     case $p in
+    standard)
+        MaxMemPerNode="$((MaxMemPerCPU * (MaxCoresPerJob+3) / 1024))GB"
+        ;;
     largemem)
         MaxMemPerNode="$((MaxMemPerCPU * MaxCoresPerJob / 1024))GB"
         ;;
