@@ -45,11 +45,11 @@ schools = {'AS': ['e0:as', 's0:as', 's1:as', 's3:as', 'arts', 'global public hea
 def lookup_school(df):
     depthit = (s for s in schools for entry in schools[s] if entry in df['Dept'].lower())
     try:
-        return depthit.next()
+        return next(depthit)
     except:
         affilhit = (s for s in schools for entry in schools[s] if entry in df['Affiliation'].lower())
         try:
-            affil = affilhit.next() 
+            affil = next(affilhit)
             return affil
         except:
             return 'OTHER'
