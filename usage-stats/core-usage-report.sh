@@ -36,7 +36,7 @@ COLUMNS="user,jobname%30,account%50,cputimeraw,alloctres,alloccpus,partition,res
 LABELS="${COLUMNS/"account%50"/Allocation}" 
 LABELS="${LABELS/"jobname%30"/JobName}"
 echo "$LABELS" | tr \, \| > $CORE_USAGE_FILE
-TZ=UTC sacct -P -n -a -X -S ${START} -E ${END} -s ${STATES} --format=${COLUMNS} >> $CORE_USAGE_FILE
+TZ=UTC sacct -P -n -a -X -S ${START} -E ${END} -s ${STATES} --format=${COLUMNS} > $CORE_USAGE_FILE
 # remove "|" characters in jobnames that conflict with the  "|" column delimiter 
 sed -i 's/chr.*slurm/chr slurm/g' $CORE_USAGE_FILE
 
@@ -52,7 +52,7 @@ sed -i 's/Health_Volunteer Volunteer sponsored/Health_Volunteer_Volunteer_sponso
 
 # create summary
 # add FILTER argument to script call
-core-usage-summary.py -d $DAYS -c $CAPACITY_FILE -u $CORE_USAGE_FILE -x $ORG_FILE -a $ALLOC_FILE -l "$LABELS" -o $OUT_FILE -g "PI,School|Allocation,Description,PI,School|Allocation,Description,PI,School,partition|School,Organization|user,School|School|School,JobType|School,partition|School,partition,JobType" -f $FILTER -p $OUTPUTPATH
+core-usage-summary.py -d $DAYS -c $CAPACITY_FILE -u $CORE_USAGE_FILE -x $ORG_FILE -a $ALLOC_FILE -l "$LABELS" -o $OUT_FILE -g "PI,School|Allocation,Description,PI,School|Allocation,Description,PI,School,partition|School,Organization|user,School|Allocation,user,PI,School,Organization|user,Allocation,PI,School,Organization|School|School,JobType|School,partition|School,partition,JobType" -f $FILTER -p $OUTPUTPATH
 # clean up
 #rm $CORE_USAGE_FILE 
 #rm $ORG_FILE
