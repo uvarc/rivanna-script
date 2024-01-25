@@ -36,7 +36,7 @@ COLUMNS="user,jobname%30,account%50,cputimeraw,alloctres,alloccpus,partition,res
 LABELS="${COLUMNS/"account%50"/Allocation}" 
 LABELS="${LABELS/"jobname%30"/JobName}"
 echo "$LABELS" | tr \, \| > $CORE_USAGE_FILE
-TZ=UTC sacct -P -n -a -X -S ${START} -E ${END} -s ${STATES} --format=${COLUMNS} > $CORE_USAGE_FILE
+TZ=UTC sacct -P -n -a -X -S ${START} -E ${END} -s ${STATES} --format=${COLUMNS} >> $CORE_USAGE_FILE
 # remove "|" characters in jobnames that conflict with the  "|" column delimiter 
 sed -i 's/chr.*slurm/chr slurm/g' $CORE_USAGE_FILE
 
