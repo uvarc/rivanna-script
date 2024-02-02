@@ -14,6 +14,8 @@ OUT_FILE=$3
 DAYS=$4
 FILTER=$5
 OUTPUTPATH="$6"
+
+YYYYMM=`echo $START | cut -c1-7`
 STATES="CANCELLED,COMPLETED,FAILED,NODE_FAIL,PREEMPTED,TIMEOUT,OUT_OF_MEMORY"
 CORE_USAGE_FILE=${OUTPUTPATH}/rivanna-corehours-${START}-${END}.csv
 CAPACITY_FILE=${OUTPUTPATH}/rivanna-capacity-${START}-${END}.csv
@@ -52,7 +54,7 @@ sed -i 's/Health_Volunteer Volunteer sponsored/Health_Volunteer_Volunteer_sponso
 
 # create summary
 # add FILTER argument to script call
-core-usage-summary.py -d $DAYS -c $CAPACITY_FILE -u $CORE_USAGE_FILE -x $ORG_FILE -a $ALLOC_FILE -l "$LABELS" -o $OUT_FILE -g "PI,School|Allocation,Description,PI,School|Allocation,Description,PI,School,partition|School,Organization|user,School|School|School,JobType|School,partition|School,partition,JobType" -f $FILTER -p $OUTPUTPATH
+core-usage-summary.py -d $DAYS -c $CAPACITY_FILE -u $CORE_USAGE_FILE -x $ORG_FILE -a $ALLOC_FILE -l "$LABELS" -p "${OUTPUTPATH}/{FILTER}/${YYYYMM}" -o $OUT_FILE -g "PI,School|Allocation,Description,PI,School|Allocation,Description,PI,School,partition|School,Organization|user,School|Allocation,user,PI,School,Organization|user,Allocation,PI,School,Organization|School|School,JobType|School,partition|School,partition,JobType" -f "${FILTER}"
 # clean up
 #rm $CORE_USAGE_FILE 
 #rm $ORG_FILE
