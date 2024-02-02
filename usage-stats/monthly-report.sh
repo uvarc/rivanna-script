@@ -12,10 +12,6 @@ DAYS=$3
 FILTER=$4 # new assignment
 OUTPUTPATH=$5/${SYEAR}-${SMONTH}
 
-if [ ! -d ${OUTPUTPATH} ]; then
-        mkdir -p ${OUTPUTPATH}
-fi
-
 SDAY=01
 FIRSTDAYMONTH=${SYEAR}-${SMONTH}-${SDAY}
 FIRSTNEXTMONTH=$(date -d "${SYEAR}${SMONTH}${SDAY}+1 month" +%Y-%m-%d)
