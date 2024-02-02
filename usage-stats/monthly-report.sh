@@ -10,7 +10,11 @@ SYEAR=$1
 SMONTH=$2
 DAYS=$3
 FILTER=$4 # new assignment
-OUTPUTPATH=$5
+OUTPUTPATH=$5/${SYEAR}-${SMONTH}
+
+if [ ! -d ${OUTPUTPATH} ]; then
+        mkdir -p ${OUTPUTPATH}
+fi
 
 SDAY=01
 FIRSTDAYMONTH=${SYEAR}-${SMONTH}-${SDAY}
@@ -30,7 +34,7 @@ get-allocation-data.sh ${SYEAR} ${SMONTH} ${OUTPUTPATH}
 
 module load anaconda
 core-usage-report.sh ${FIRSTDAYMONTH}T00:00:00 ${LASTDAYMONTH}T23:59:59 corehours-${SYEAR}-${SMONTH}.csv $DAYS $FILTER $OUTPUTPATH
-# added $FILTER argument 
+# added $FILTER argument
 
 # filter cpurawtime>0 (5th column in corehours-${SYEAR}-${SMONTH}.csv, and get uids
 #awk -F, '{ if ($2 > 0) print $1 }' all/corehours-${SYEAR}-${SMONTH}-userSchool-all.csv | head
