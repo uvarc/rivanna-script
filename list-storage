@@ -5,7 +5,7 @@
 
 # parse argument
 case $1 in
-    CLAS|SDS|SEAS|SOM)
+    CLAS|SDS|SEAS|SOM|EHD)
         ARG=$1
         PRINT_ALL=false
         ;;
@@ -13,10 +13,23 @@ case $1 in
         PRINT_ALL=true
         ;;
     *)
-        echo "Usage: `basename $0` CLAS|SDS|SEAS|SOM"
+        echo "Usage: `basename $0` CLAS|SDS|SEAS|SOM|EHD"
         exit 1
         ;;
 esac
+
+DTNDIR=/standard/rc-staff/dtn
+STANDARD=$DTNDIR/ceph-list
+GPFS=$DTNDIR/gpfs-list
+ICS=$DTNDIR/ivy-list
+QUMULO=$DTNDIR/qumulo-list
+
+for i in $STANDARD $GPFS $ICS $QUMULO; do
+    if [ ! -e $i ]; then
+        echo "Storage list $i not found"
+        exit 1
+    fi
+done
 
 function parse_ldap {
     FIELD=$1
@@ -31,6 +44,10 @@ function parse_ldap {
     fi
 }
 
+function get_ceph {
+    getfattr --only-values -n $2 $1 2>/dev/null|awk 'END{print $1/1024**4}'
+}
+
 total_size=0
 total_used=0
 
@@ -39,9 +56,9 @@ TMP=$(mktemp)
 TMPLDAP=$(mktemp)
 LOG=storage.log
 
-IN=(/nv/vol188/dtn/qumulo-list /nv/vol188/dtn/sammas-list)
-TYPES=(project value)
-DIRS=(project nv)
+IN=($STANDARD $GPFS $ICS $QUMULO)
+TYPES=(standard project ics qumulo)
+DIRS=(standard project "" project)
 
 #printf "%-10s %-40s %-8s %-35s %-25s %-10s %-10s\n" School Department Username Name Volume "Size (TB)" "Used (TB)" >$LOG
 printf "%-6s %-8s %-35s %-25s %-8s %-10s %-10s\n" School Username Name Volume Type "Size (TB)" "Used (TB)" >$LOG
@@ -51,6 +68,9 @@ echo >>$LOG
 for i in ${!IN[@]}; do
     {
         TYPE=${TYPES[$i]}
+        if [ ! "$TYPE" = "ics" ]; then 
+            continue
+        fi
         DIR=${DIRS[$i]}
         total=$(wc -l < ${IN[$i]})
         total=$((total-1))
@@ -58,18 +78,12 @@ for i in ${!IN[@]}; do
         read # skip first line
         while read -r line; do
             >&2 echo -ne "Reading ${IN[$i]} ($count/$total)\r"
-# could have multiple owners
+
+            # could have multiple owners
             USERNAME=`echo $line|awk -F: '{print $8}'|awk '{print $1}'`
             VOLUME=`echo $line|awk -F: '{print $1}'`
 
-            if [ ! -e /$DIR/$VOLUME ]; then
-                count=$((count+1))
-                continue
-            fi
-
-# skip instructional (assume smaller than 1 TB)
-            RAWSIZE=$(df /$DIR/$VOLUME | awk '{if(NR==2) print $2}')
-            if [ "$RAWSIZE" -lt "1000000000" ]; then
+            if [ ! -d /$DIR/$VOLUME ]; then
                 count=$((count+1))
                 continue
             fi
@@ -77,13 +91,16 @@ for i in ${!IN[@]}; do
             ldapsearch -x -LLL -h ldap.virginia.edu -b "o=University of Virginia,c=US" uid=$USERNAME >$TMPLDAP
             NAME=$(parse_ldap displayName $TMPLDAP)
             SCHOOL_DEPT=$(parse_ldap uvaDisplayDepartment $TMPLDAP)
+            echo $DIR $VOLUME $NAME $SCHOOL_DEPT
 
-# deal with school & department
+            # deal with school & department
             case "${SCHOOL_DEPT%-*}" in
                 "AS"|"Arts_&_Sciences_Graduate")
                     SCHOOL=CLAS ;;
                 "DS"|"Data_Science"|"Data_Science_Graduate")
                     SCHOOL=SDS ;;
+                "ED"|"Education_Graduate")
+                    SCHOOL=EHD ;;
                 "EN"|"Engineering_Graduate")
                     SCHOOL=SEAS ;;
                 "MD"|"Medicine")
@@ -105,24 +122,35 @@ for i in ${!IN[@]}; do
                 fi
             fi
 
+            case $TYPE in
+                project)
+                    read -r SIZE USED < <(/usr/lpp/mmfs/bin/mmlsquota -j $VOLUME --block-size G tardis|awk 'END{print $3/1024,$4/1024}')
+                    ;;
+                standard)
+                    SIZE=$(get_ceph /$DIR/$VOLUME ceph.quota.max_bytes)
+                    USED=$(get_ceph /$DIR/$VOLUME ceph.dir.rbytes)
+                    ;;
+                ics)
+                    SIZE=$(echo $line|awk -F: '{print $4}'|awk '{print $1}')
+                    # unknown
+                    USED="0"
+                    ;;
+                qumulo)
+                    read -r SIZE USED < <(df /$DIR/$VOLUME | awk 'END{print $2/1024**3,$3/1024**3}')
+                    ;;
+                *)
+                    echo "Unknown type"
+                    exit 1
+                    ;;
+            esac
+
             if [ -z "$USERNAME" ]; then
                 USERNAME="-"
             fi
             if [ -z "$NAME" ]; then
                 NAME="-"
             fi
-            printf "%-6s %-8s %-35s %-25s %-8s" "$SCHOOL" "$USERNAME" "$NAME" "$VOLUME" "$TYPE"
-
-            df /$DIR/$VOLUME | awk '
-            function KtoT(input) {
-                return input/1024**3
-            } {
-                if (NR==2) {
-                    size=KtoT($2)
-                    used=KtoT($3)
-                    printf "%10.4f %10.4f\n",size,used
-                }
-            }'
+            printf "%-6s %-8s %-35s %-25s %-8s %10.4f %10.4f\n" "$SCHOOL" "$USERNAME" "$NAME" "$VOLUME" "$TYPE" "$SIZE" "$USED"
 
             count=$((count+1))
         done
@@ -132,7 +160,7 @@ done
 rm $TMPLDAP
 
 sort -k1 $TMP >>$LOG
-echo "Done. Saved to $LOG"
+echo >>$LOG
 
 awk '{
     size+=$6
@@ -140,5 +168,7 @@ awk '{
 } END {
     printf "Total size: %.4f TB\n", size
     printf "Total used: %.4f TB (%.4f%%)\n", used, used/size*100
-}' $TMP
+}' $TMP >>$LOG
+
 rm $TMP
+echo "Done. Saved to $LOG"

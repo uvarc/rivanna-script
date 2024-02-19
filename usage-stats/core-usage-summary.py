@@ -107,6 +107,10 @@ def merge_data(labels, usage_file, account_file, org_file, capacity_file, hours,
 	usage_df['Utilization'] = usage_df.apply(lambda row: utilization(row, cap_dict), axis=1)
 	usage_df['PartitionType'] = usage_df.apply(lambda row: partition_type(row), axis=1)
 
+	usage_df = usage_df.drop(columns=["cputimeraw", "alloccpus", "GPU devices"])
+	if "Utilization" in usage_df:
+		usage_df = usage_df.drop(columns=["Utilization"])
+
 	org_groups = [g for g in groups if g in usage_df.columns.values]
 	usage_df = usage_df.groupby(org_groups).sum().reset_index()
 	print(usage_df)
