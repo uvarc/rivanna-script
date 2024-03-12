@@ -10,7 +10,7 @@ fi
 
 JOBID=$1
 
-read -r NAME ACCOUNT STATE START END ELAPSED CORE < <(sacct -j $JOBID -no user,account,state,start,end,elapsed,alloccpus)
+read -r NAME ACCOUNT STATE START END ELAPSED CORE < <(sacct -j $JOBID -no user,account%30,state,start,end,elapsed,alloccpus)
 if [ -z "$STATE" ]; then
     echo "No such job"
     exit 1
