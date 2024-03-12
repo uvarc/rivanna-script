@@ -13,7 +13,7 @@ case $1 in
         PRINT_ALL=true
         ;;
     *)
-        echo "Usage: `basename $0` CLAS|SDS|SEAS|SOM|EHD"
+        echo "Usage: `basename $0` CLAS|SDS|SEAS|SOM|EHD|all"
         exit 1
         ;;
 esac
@@ -21,7 +21,7 @@ esac
 DTNDIR=/standard/rc-staff/dtn
 STANDARD=$DTNDIR/ceph-list
 GPFS=$DTNDIR/gpfs-list
-ICS=$DTNDIR/ivy-list
+#ICS=$DTNDIR/ivy-list
 QUMULO=$DTNDIR/qumulo-list
 
 for i in $STANDARD $GPFS $ICS $QUMULO; do
@@ -60,17 +60,13 @@ IN=($STANDARD $GPFS $ICS $QUMULO)
 TYPES=(standard project ics qumulo)
 DIRS=(standard project "" project)
 
-#printf "%-10s %-40s %-8s %-35s %-25s %-10s %-10s\n" School Department Username Name Volume "Size (TB)" "Used (TB)" >$LOG
-printf "%-6s %-8s %-35s %-25s %-8s %-10s %-10s\n" School Username Name Volume Type "Size (TB)" "Used (TB)" >$LOG
-printf "%0.s-" {1..107} >>$LOG
+printf "%-6s %-40s %-8s %-35s %-25s %-8s %-10s %-10s\n" School Department Username Name Volume Type "Size (TB)" "Used (TB)" >$LOG
+printf "%0.s-" {1..148} >>$LOG
 echo >>$LOG
 
 for i in ${!IN[@]}; do
     {
         TYPE=${TYPES[$i]}
-        if [ ! "$TYPE" = "ics" ]; then 
-            continue
-        fi
         DIR=${DIRS[$i]}
         total=$(wc -l < ${IN[$i]})
         total=$((total-1))
@@ -91,7 +87,6 @@ for i in ${!IN[@]}; do
             ldapsearch -x -LLL -h ldap.virginia.edu -b "o=University of Virginia,c=US" uid=$USERNAME >$TMPLDAP
             NAME=$(parse_ldap displayName $TMPLDAP)
             SCHOOL_DEPT=$(parse_ldap uvaDisplayDepartment $TMPLDAP)
-            echo $DIR $VOLUME $NAME $SCHOOL_DEPT
 
             # deal with school & department
             case "${SCHOOL_DEPT%-*}" in
@@ -124,7 +119,7 @@ for i in ${!IN[@]}; do
 
             case $TYPE in
                 project)
-                    read -r SIZE USED < <(/usr/lpp/mmfs/bin/mmlsquota -j $VOLUME --block-size G tardis|awk 'END{print $3/1024,$4/1024}')
+                    read -r USED SIZE < <(/usr/lpp/mmfs/bin/mmlsquota -j $VOLUME --block-size G tardis|awk 'END{print $3/1024,$4/1024}')
                     ;;
                 standard)
                     SIZE=$(get_ceph /$DIR/$VOLUME ceph.quota.max_bytes)
@@ -150,7 +145,7 @@ for i in ${!IN[@]}; do
             if [ -z "$NAME" ]; then
                 NAME="-"
             fi
-            printf "%-6s %-8s %-35s %-25s %-8s %10.4f %10.4f\n" "$SCHOOL" "$USERNAME" "$NAME" "$VOLUME" "$TYPE" "$SIZE" "$USED"
+            printf "%-6s %-40s %-8s %-35s %-25s %-8s %10.4f %10.4f\n" "$SCHOOL" "$SCHOOL_DEPT" "$USERNAME" "$NAME" "$VOLUME" "$TYPE" "$SIZE" "$USED"
 
             count=$((count+1))
         done
@@ -162,13 +157,13 @@ rm $TMPLDAP
 sort -k1 $TMP >>$LOG
 echo >>$LOG
 
-awk '{
-    size+=$6
-    used+=$7
-} END {
-    printf "Total size: %.4f TB\n", size
-    printf "Total used: %.4f TB (%.4f%%)\n", used, used/size*100
-}' $TMP >>$LOG
+#awk '{
+#    size+=$6
+#    used+=$7
+#} END {
+#    printf "Total size: %.4f TB\n", size
+#    printf "Total used: %.4f TB (%.4f%%)\n", used, used/size*100
+#}' $TMP >>$LOG
 
 rm $TMP
 echo "Done. Saved to $LOG"

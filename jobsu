@@ -1,0 +1,34 @@
+#!/bin/bash
+# print SU usage for a given job ID
+# Ruoshi Sun
+# 2024-03-12
+
+if [ $# -ne 1 ]; then
+    echo "Usage: `basename $0` JobID"
+    exit 1
+fi
+
+JOBID=$1
+
+read -r NAME ACCOUNT STATE START END ELAPSED CORE < <(sacct -j $JOBID -no user,account,state,start,end,elapsed,alloccpus)
+if [ -z "$STATE" ]; then
+    echo "No such job"
+    exit 1
+fi 
+
+echo "      User: $NAME"
+echo "Allocation: $ACCOUNT"
+echo "     State: $STATE"
+echo "     Start: $START"
+echo "       End: $END"
+echo -e "\e[1m   Elapsed: $ELAPSED"
+echo -e "     Cores: $CORE\e[0m"
+
+MAMSTART=$(echo $START|sed 's/T.*$//')
+
+read -r AMOUNT DELTA BALANCE < <(sudo /opt/mam/current/bin/mam-list-transactions -J $JOBID -s $MAMSTART | awk 'END{print $9,$10,$11}')
+
+echo -e "\e[1;31m        SU: $AMOUNT\e[0m"
+echo "     Delta: $DELTA"
+echo "   Balance: $BALANCE"
+
