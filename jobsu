@@ -24,6 +24,11 @@ echo "       End: $END"
 echo -e "\e[1m   Elapsed: $ELAPSED"
 echo -e "     Cores: $CORE\e[0m"
 
+if [ "$END" = "Unknown" ]; then
+    echo -e "        SU: (TBD)"
+    exit
+fi
+
 MAMSTART=$(echo $START|sed 's/T.*$//')
 
 read -r AMOUNT DELTA BALANCE < <(sudo /opt/mam/current/bin/mam-list-transactions -J $JOBID -s $MAMSTART | awk 'END{print $9,$10,$11}')
@@ -31,4 +36,3 @@ read -r AMOUNT DELTA BALANCE < <(sudo /opt/mam/current/bin/mam-list-transactions
 echo -e "\e[1;31m        SU: $AMOUNT\e[0m"
 echo "     Delta: $DELTA"
 echo "   Balance: $BALANCE"
-
