@@ -12,11 +12,6 @@ PROJECT_PATH="$DIR/rivanna-script/usage-stats"
 PREFIX="$PROJECT_PATH/rivanna-util-env"
 YML="$PROJECT_PATH/environment.yml"
 
-if ! command -v module &> /dev/null; then
-	echo "module command not found"
-	exit 1
-fi
-
 module load anaconda || { echo "Failed to load anaconda module"; exit 1 }
 conda env create -f "$YML" --prefix "$PREFIX" || { echo "Failed to create conda environment"; exit 1; }
 module unload anaconda
