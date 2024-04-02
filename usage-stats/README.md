@@ -17,7 +17,7 @@ Before using the scripts, you need to run the `install.sh` script to set up the 
 Usage:
 
 ```bash
-./install.sh path/to/repo
+./install.sh path/to/dir-with-repo
 ```
 
 Replace `path/to/repo` with the path where you have cloned the repository (do not include the "rivanna-script" portion of the path). The script will perform the following actions:
