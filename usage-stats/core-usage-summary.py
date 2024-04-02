@@ -91,7 +91,7 @@ def merge_data(labels, usage_file, account_file, org_file, capacity_file, hours,
 	print(capacity_df)
 	capacity_df.to_csv(f"{capacity_file[:-4]}-summary.csv")
 
-	usage_df = pd.read_csv(usage_file, delimiter="|")  # r"\s+", names=labels) #, header=0, skiprows=7)
+	usage_df = pd.read_csv(usage_file, delimiter="|")  
 	usage_df['Total CPU hours'] = usage_df['cputimeraw'] / 3600
 	usage_df['GPU devices'] = usage_df['alloctres'].str.extract(r'gres/gpu=(\d+)').fillna(0).astype(
 		int)  
@@ -100,6 +100,7 @@ def merge_data(labels, usage_file, account_file, org_file, capacity_file, hours,
 	usage_df['JobType'] = usage_df.apply(lambda row: job_type(row), axis=1)
 	usage_df['Utilization'] = usage_df.apply(lambda row: utilization(row, cap_dict), axis=1)
 	usage_df['PartitionType'] = usage_df.apply(lambda row: partition_type(row), axis=1)
+	# usage_df['Wait Time'] = usage_df['resvcpuraw'] / usage_df['reqcpus'] / 3600
 
 	usage_df = usage_df.drop(columns=["cputimeraw", "alloccpus", "GPU devices"])
 	if "Utilization" in usage_df:
