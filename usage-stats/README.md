@@ -60,9 +60,37 @@ Abbreviations:
 
 Make sure to replace the arguments with values that match your requirements.
 
-## Scheduling Script Execution
-TODO
+## Scheduling the Monthly Report Script with Scrontab
+#### As of the time of publication (April 2, 2024) scrontab is only enabled on the derp cluster.
+The Rivanna HPC system uses `scrontab`, a Slurm crontab tool, to schedule jobs to run at regular intervals. This section outlines how to schedule the `schedule-monthly-report.sh` script to automatically run at the beginning of each month to generate the previous month's report.
 
+### Step 1: Prepare the Script
+Configure your `schedule-monthly-report.sh`. There are directions included within the script on what to change denoted by `TODO`.
+
+### Step 2: Edit Your Scrontab File
+To edit your scrontab entries, execute:
+```bash
+scrontab -e
+```
+This command opens your user-specific scrontab file in the default text editor set in your environment. (You can change your default editor with `export EDITOR=<path/to/editor_binary>`)
+
+### Step 3: Add your Script to Scrontab
+In the editor, add a new line to schedule your script. To run it at the beginning of each month, use the following crontab syntax:
+```
+0 0 1 * * /path/to/your/schedule-monthly-report.sh
+```
+
+### Step 4: Save and Exit
+After adding the entry, save your changes and exit the editor. Your script is now scheduled to run automatically.
+
+### Step 5: Monitor Your Scheduled Jobs
+You can view your scheduled scrontab jobs at any time by running:
+```bash
+scrontab -l
+```
+
+### Consult Documentation
+The documentation for scrontab can be found here: https://docs.nersc.gov/jobs/workflow/scrontab/
 ---
 
 Please ensure you have the necessary permissions to run these scripts and access the specified directories and data.
