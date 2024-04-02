@@ -1,4 +1,4 @@
-# README for Rivanna Script Repository
+# Rivanna Script - Rivanna Utilization Statistics
 
 Welcome to the Rivanna Script Repository, a collection of scripts designed to facilitate the generation of usage statistics, allocation reports, and user management on the Rivanna high-performance computing (HPC) environment. This README provides instructions on how to get started with these scripts, including cloning the repo, setting up the environment, and running the scripts for generating reports.
 
