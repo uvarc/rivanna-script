@@ -52,8 +52,11 @@ The repository contains several scripts for generating reports and managing user
 
 Arguments:
 - `2024 03 31`: The date for the report in `year month days` format.
-- `School:[DS]|School:[EN]...|all`: Filtering options for the report. Replace or extend this argument according to your specific needs.
+- `School:[DS]|Organization:[cab]|all`: Filtering options for the report. Replace or extend this argument according to your specific needs.
 - `/project/arcs/rivanna-stats`: The output directory where the report will be saved.
+
+Abbreviations:
+
 
 Make sure to replace the arguments with values that match your requirements.
 
