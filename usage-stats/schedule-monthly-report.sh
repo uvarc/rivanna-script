@@ -5,7 +5,7 @@
 #SBATCH -o /path/to/output-directory/monthly-report-%j.out # TODO: Change /path/to/output-directory/ to your specific output directory, this is where stdout prints will go, not your reports
 #SBATCH --open-mode=append
 
-# Scheduling configured to run at end of each month
+# Configured to report utilization data of prior month
 year=$(date --date="$(date +%Y-%m-15) -1 month" +%Y)
 month=$(date --date="$(date +%Y-%m-15) -1 month" +%m)
 last_day=$(date -d "$year-$month-01 +1 month -1 day" +%d)
