@@ -1,9 +1,4 @@
 #!/bin/bash
-#SBATCH -q cron
-#SBATCH -A <account_name> # TODO: Change <account_name> to your specific account name
-#SBATCH -t 01:00:00
-#SBATCH -o /path/to/output-directory/monthly-report-%j.out # TODO: Change /path/to/output-directory/ to your specific output directory, this is where stdout prints will go, not your reports
-#SBATCH --open-mode=append
 
 # Configured to report utilization data of prior month
 year=$(date --date="$(date +%Y-%m-15) -1 month" +%Y)
