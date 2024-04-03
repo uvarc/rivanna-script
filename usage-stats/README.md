@@ -65,7 +65,7 @@ Make sure to replace the arguments with values that match your requirements.
 The Rivanna HPC system uses `scrontab`, a Slurm crontab tool, to schedule jobs to run at regular intervals. This section outlines how to schedule the `schedule-monthly-report.sh` script to automatically run at the beginning of each month to generate the previous month's report.
 
 ### Step 1: Prepare the Script
-Configure your `schedule-monthly-report.sh`. There are directions included within the script on what to change denoted by `TODO`.
+Configure your `scron.sh`. There are directions included within the script on what to change denoted by `TODO`.
 
 ### Step 2: Edit Your Scrontab File
 To edit your scrontab entries, execute:
@@ -77,7 +77,7 @@ This command opens your user-specific scrontab file in the default text editor s
 ### Step 3: Add your Script to Scrontab
 In the editor, add a new line to schedule your script. To run it at the beginning of each month, use the following crontab syntax:
 ```
-0 0 1 * * /path/to/your/schedule-monthly-report.sh
+0 0 1 * * /path/to/your/scron.sh
 ```
 
 ### Step 4: Save and Exit
