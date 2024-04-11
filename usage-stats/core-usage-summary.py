@@ -100,7 +100,7 @@ def merge_data(labels, usage_file, account_file, org_file, capacity_file, hours,
 	usage_df['JobType'] = usage_df.apply(lambda row: job_type(row), axis=1)
 	usage_df['Utilization'] = usage_df.apply(lambda row: utilization(row, cap_dict), axis=1)
 	usage_df['PartitionType'] = usage_df.apply(lambda row: partition_type(row), axis=1)
-	# usage_df['Wait Time'] = usage_df['resvcpuraw'] / usage_df['reqcpus'] / 3600
+	usage_df['Wait Time'] = usage_df['resvcpuraw'] / usage_df['reqcpus'] / 3600
 
 	usage_df = usage_df.drop(columns=["cputimeraw", "alloccpus", "GPU devices"])
 	if "Utilization" in usage_df:
@@ -132,12 +132,12 @@ def save_df(df: pd.DataFrame, filepath=".", fname="rivanna-stats") -> None:
 
 
 def apply_filter(df: pd.DataFrame, filter_dict) -> pd.DataFrame:
-	print (f"Applying filter {filter_dict} to columns={df.columns.values}")
+	print(f"Applying filter {filter_dict} to columns={df.columns.values}")
 	if "all" in filter_dict.keys():
 		# nothing to do 
 		return df
 	# drop keys that don't exist in dataframe
-	filter_dict = {k:v for k,v in filter_dict.items() if k in df.columns.values}
+	filter_dict = {k: v for k, v in filter_dict.items() if k in df.columns.values}
 
 	if len(filter_dict) == 0:
 		# filter column not present, nothing to do
@@ -155,13 +155,13 @@ def apply_filter(df: pd.DataFrame, filter_dict) -> pd.DataFrame:
 		filter_idx = pd.MultiIndex.from_product(fvalue_list, names=list(filter_dict)) 
 		df_idx = pd.MultiIndex.from_frame(df[filter_dict.keys()])
 		filtered_df = df.loc[df_idx.isin(filter_idx)]
-	print (filtered_df.groupby(list(filter_dict)).sum(numeric_only=True))
+	print(filtered_df.groupby(list(filter_dict)).sum(numeric_only=True))
 	return filtered_df
 
 
 def parse_filter(farg: str) -> list:
 	"""Example:
-	    in:
+		in:
 		"School:[DS,EN,MD];Description:[standard,purchase]|Status:[Staff,Faculty]"
 
 		out: list of dict
@@ -188,7 +188,7 @@ def parse_filter(farg: str) -> list:
 				fd[kv[0]] = None
 		filter_list.append(fd) 
 	if not any("all" in d for d in filter_list):
-		filter_list.append({"all":None})
+		filter_list.append({"all": None})
 	return filter_list    
 
 
@@ -208,21 +208,21 @@ if __name__ == '__main__':
 		print(''.join(["#"] * 80))
 		groups = r.split(',') if args.groups != '' else ['Allocation']
 		print(f'Analyzing by {r}, {groups}')
-		for filter in filters:
-			print (f"Filtering by {filter}")
+		for f in filters:
+			print(f"Filtering by {f}")
 			sum_df = df.groupby(groups).sum().reset_index()  
 			ftrunk, ext = os.path.splitext(args.output)
 			# flatten filter values which is a list of lists
-			if list(filter.values())[0] is not None:
-				f_values = [v for values in filter.values() for v in values]
+			if list(f.values())[0] is not None:
+				f_values = [v for values in f.values() for v in values]
 				filter_str = "-".join(f_values)
 			else:
-				filter_str = "-".join(filter.keys())
-			print (f"filter_str={filter_str}")
+				filter_str = "-".join(f.keys())
+			print(f"filter_str={filter_str}")
 			filepath = args.path.replace("{FILTER}", filter_str)
 			fname = f"{ftrunk}-{''.join(groups)}-{filter_str}{ext}"
 			print(f"filepath={filepath}, fname={fname}")
-			filtered_df  = apply_filter(sum_df, filter)
+			filtered_df = apply_filter(sum_df, f)
 			save_df(filtered_df, filepath=filepath, fname=fname)
 			
 			print(filtered_df)
