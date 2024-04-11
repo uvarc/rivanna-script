@@ -189,45 +189,65 @@ def parse_filter(farg: str) -> list:
 		filter_list.append(fd) 
 	if not any("all" in d for d in filter_list):
 		filter_list.append({"all": None})
-	return filter_list    
+	return filter_list
 
 
-if __name__ == '__main__':
+def parse_args() -> argparse.Namespace:
 	parser = init_parser()
-	args = parser.parse_args()
-	filters = parse_filter(args.filter)
+	return parser.parse_args()
+
+
+def prepare_analysis_groups(args) -> (list, list):
+	"""Prepares and returns analysis groups and aggregation groups."""
 	agroups = list(set(args.groups.replace('|', ',').split(',')))
 	if 'Allocation' not in agroups:
 		agroups.append('Allocation')
 	analysis = args.groups.split('|')
-	hours = float(args.days) * 24
-	df = merge_data(args.usage, args.allocations, args.organizations, args.capacity, hours, groups=agroups)
-	filters = parse_filter(args.filter)
+	return agroups, analysis
 
+
+def perform_analysis(df, analysis, filters, args):
+	"""Performs the data analysis based on the groups and filters."""
 	for r in analysis:
 		print(''.join(["#"] * 80))
 		groups = r.split(',') if args.groups != '' else ['Allocation']
 		print(f'Analyzing by {r}, {groups}')
-		for f in filters:
-			print(f"Filtering by {f}")
-			sum_df = df.groupby(groups).sum().reset_index()  
-			ftrunk, ext = os.path.splitext(args.output)
-			# flatten filter values which is a list of lists
-			if list(f.values())[0] is not None:
-				f_values = [v for values in f.values() for v in values]
-				filter_str = "-".join(f_values)
-			else:
-				filter_str = "-".join(f.keys())
-			print(f"filter_str={filter_str}")
-			filepath = args.path.replace("{FILTER}", filter_str)
-			fname = f"{ftrunk}-{''.join(groups)}-{filter_str}{ext}"
-			print(f"filepath={filepath}, fname={fname}")
-			filtered_df = apply_filter(sum_df, f)
-			save_df(filtered_df, filepath=filepath, fname=fname)
-			
-			print(filtered_df)
-			print("------------------------------------")
-			print(f"Total CPU Hours: {filtered_df['Total CPU hours'].sum():,.2f}")
-			print(f"Total GPU Device Hours: {filtered_df['Total GPU hours'].sum():,.2f}")
-			
-			groups = r.split(',') if args.groups != '' else ['User']
+		process_filters(df, groups, filters, args)
+
+
+def process_filters(df, groups, filters, args):
+	"""Processes filters and outputs analysis results."""
+	for f in filters:
+		print(f"Filtering by {f}")
+		sum_df = df.groupby(groups).sum().reset_index()
+		output_analysis_results(sum_df, groups, f, args)
+
+
+def output_analysis_results(df, groups, filter_criteria, args):
+	"""Saves the filtered DataFrame and prints analysis results."""
+	ftrunk, ext = os.path.splitext(args.output)
+	# Flatten filter values which is a list of lists
+	if list(filter_criteria.values())[0] is not None:
+		f_values = [v for values in filter_criteria.values() for v in values]
+		filter_str = "-".join(f_values)
+	else:
+		filter_str = "-".join(filter_criteria.keys())
+	filepath = args.path.replace("{FILTER}", filter_str)
+	fname = f"{ftrunk}-{''.join(groups)}-{filter_str}{ext}"
+	print(f"filepath={filepath}, fname={fname}")
+	filtered_df = apply_filter(df, filter_criteria)
+	save_df(filtered_df, filepath=filepath, fname=fname)
+
+	print(filtered_df)
+	print("------------------------------------")
+	print(f"Total CPU Hours: {filtered_df['Total CPU hours'].sum():,.2f}")
+	print(f"Total GPU Device Hours: {filtered_df['Total GPU hours'].sum():,.2f}")
+
+
+if __name__ == '__main__':
+	args = parse_args()
+	filters = parse_filter(args.filter)
+	agroups, analysis = prepare_analysis_groups(args)
+	hours = float(args.days) * 24
+	df = merge_data(args.usage, args.allocations, args.organizations, args.capacity, hours, groups=agroups)
+	perform_analysis(df, analysis, filters, args)
