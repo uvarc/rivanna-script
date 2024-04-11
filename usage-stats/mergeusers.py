@@ -34,6 +34,7 @@ schools = {'AS': ['e0:as', 's0:as', 's1:as', 's3:as', 'arts', 'global public hea
 
 
 def lookup_school(df: pd.DataFrame) -> str:
+    # can't figure out how to simplify this logic w/o causing KeyError
     depthit = (s for s in schools for entry in schools[s] if entry in df['Dept'].lower())
     try:
         return next(depthit)
