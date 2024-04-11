@@ -17,13 +17,6 @@ Created on Fri May  8 09:52:13 2020
 @author: khs3z
 """
 
-
-uidfile = sys.argv[1]
-output_path = sys.argv[2]
-outputfile = f"{output_path}/Combined_{os.path.basename(uidfile)}"
-officehours = f"{output_path}/Combined_Office Hours Attendees-curated.csv"
-report = f"{output_path}/Office_Hours_Attendees-report.xlsx"
-
 schools = {'AS': ['e0:as', 's0:as', 's1:as', 's3:as', 'arts', 'global public health', 'english', 'economics', 'psychology', 'environmental', 'politics', 'biology', 'chemistry'],
            'EN': ['e0:en', 's0:en', 's1:en', 's2:en', 'engineer', 'systems', 'computer', 'materials'],
            'MD': ['e0:interns and  resident', 'e0:md', 'som', 'global health', 'cphg', 'physical therapy', 'public health genomics', 'public health science', 'public health services', 'pharma', 'md-micr', 'biomed', 'infect', 'neuroscience', 'medicine', 'cardiovascular', 'cell bio', 'pediatrics', 'immunology', 'microbio'],
@@ -41,16 +34,16 @@ schools = {'AS': ['e0:as', 's0:as', 's1:as', 's3:as', 'arts', 'global public hea
 
 
 def lookup_school(df: pd.DataFrame) -> str:
-    global schools
-    dept_lower = df["Dept"].lower()
-    affil_lower = df["Affiliation"].lower()
-    for school, entries in schools.items():
-        if any(entry in dept_lower for entry in entries):
-            return school
-    for school, entries in schools.items():
-        if any(entry in affil_lower for entry in entries):
-            return school
-    return "OTHER"
+    depthit = (s for s in schools for entry in schools[s] if entry in df['Dept'].lower())
+    try:
+        return next(depthit)
+    except:
+        affilhit = (s for s in schools for entry in schools[s] if entry in df['Affiliation'].lower())
+        try:
+            affil = next(affilhit)
+            return affil
+        except:
+            return 'OTHER'
 
 
 def main(uidfile, output_path):
