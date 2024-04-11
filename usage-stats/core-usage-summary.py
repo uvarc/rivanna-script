@@ -9,7 +9,7 @@ import os
 pd.options.display.float_format = '{:,.2f}'.format
 
 
-def init_parser():
+def init_parser() -> argparse.ArgumentParser:
 	parser = argparse.ArgumentParser(
 		description='Parses SLURM core hour usage, mam account and mam organization information to create Rivanna usage stats')
 	parser.add_argument('-a', '--allocations', required=True, help='file with allocation information')
@@ -81,7 +81,7 @@ def get_pi(row):
 	return pi
 
 
-def merge_data(labels, usage_file, account_file, org_file, capacity_file, hours, groups=['Allocation']):
+def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=['Allocation']) -> pd.DataFrame:
 	capacity_df = pd.read_csv(capacity_file, delimiter='|')
 	capacity_df['GPU devices'] = capacity_df.apply(lambda row: gpu_devices(row), axis=1)  
 	capacity_df = capacity_df.groupby(['PARTITION']).agg({"NODELIST": len, "CPUS": np.sum, "GPU devices": np.sum})
@@ -201,7 +201,7 @@ if __name__ == '__main__':
 		agroups.append('Allocation')
 	analysis = args.groups.split('|')
 	hours = float(args.days) * 24
-	df = merge_data(args.labels, args.usage, args.allocations, args.organizations, args.capacity, hours, groups=agroups)
+	df = merge_data(args.usage, args.allocations, args.organizations, args.capacity, hours, groups=agroups)
 	filters = parse_filter(args.filter)
 
 	for r in analysis:
