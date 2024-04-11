@@ -33,17 +33,21 @@ schools = {'AS': ['e0:as', 's0:as', 's1:as', 's3:as', 'arts', 'global public hea
            'NR': ['nursing']}
 
 
-def lookup_school(df: pd.DataFrame) -> str:
-    depthit = (s for s in schools for entry in schools[s] if entry in df['Dept'].lower())
-    try:
-        return next(depthit)
-    except:
-        affilhit = (s for s in schools for entry in schools[s] if entry in df['Affiliation'].lower())
-        try:
-            affil = next(affilhit)
-            return affil
-        except:
-            return 'OTHER'
+def lookup_school(row):
+    dept_lower = row['Dept'].lower()
+    affil_lower = row['Affiliation'].lower()
+
+    # Check against department entries first
+    for school, entries in schools.items():
+        if any(entry in dept_lower for entry in entries):
+            return school
+
+    # Check against affiliation entries if no department match is found
+    for school, entries in schools.items():
+        if any(entry in affil_lower for entry in entries):
+            return school
+
+    return 'OTHER'
 
 
 def main(uidfile, output_path):
