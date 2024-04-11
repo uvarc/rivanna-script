@@ -143,7 +143,7 @@ def apply_filter(df: pd.DataFrame, filter_dict) -> pd.DataFrame:
 		# filter column not present, nothing to do
 		return pd.DataFrame(columns=df.columns.values)
 
-	print (f"filter_dict={filter_dict}")
+	print(f"filter_dict={filter_dict}")
 	if len(filter_dict) == 1:
 		# filter by single column
 		key_col = list(filter_dict.keys())[0]
