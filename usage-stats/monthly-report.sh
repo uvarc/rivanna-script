@@ -31,4 +31,4 @@ mergeusers.py ${OUTPUTPATH}/activeusers-${SYEAR}-${SMONTH}.csv ${OUTPUTPATH}
 
 mv ${OUTPUTPATH}/Combined_allocationPIsFull.csv ${OUTPUTPATH}/Combined_allocationPIsFull-${SYEAR}-${SMONTH}.csv
 
-cleanup.sh ${YEAR} ${MONTH}
+cleanup.sh ${SYEAR} ${SMONTH} ${OUTPUTPATH}
