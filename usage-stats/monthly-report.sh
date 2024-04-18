@@ -28,3 +28,5 @@ core-usage-report.sh ${FIRSTDAYMONTH}T00:00:00 ${LASTDAYMONTH}T23:59:59 corehour
 awk -F, '{ if ($2 > 0) print $1 }' ${OUTPUTPATH}/all/${SYEAR}-${SMONTH}/corehours-${SYEAR}-${SMONTH}-userSchool-all.csv | sort -u > ${OUTPUTPATH}/activeusers-UIDs-${SYEAR}-${SMONTH}.txt
 ldapreport.sh ${OUTPUTPATH}/activeusers-UIDs-${SYEAR}-${SMONTH}.txt > ${OUTPUTPATH}/activeusers-${SYEAR}-${SMONTH}.csv
 mergeusers.py ${OUTPUTPATH}/activeusers-${SYEAR}-${SMONTH}.csv ${OUTPUTPATH}
+
+mv ${OUTPUTPATH}/Combined_allocationPIsFull.csv ${OUTPUTPATH}/Combined_allocationPIsFull-${SYEAR}-${SMONTH}.csv
