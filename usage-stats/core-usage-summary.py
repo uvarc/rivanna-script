@@ -9,7 +9,7 @@ import os
 pd.options.display.float_format = '{:,.2f}'.format
 
 
-def init_parser():
+def init_parser() -> argparse.ArgumentParser:
 	parser = argparse.ArgumentParser(
 		description='Parses SLURM core hour usage, mam account and mam organization information to create Rivanna usage stats')
 	parser.add_argument('-a', '--allocations', required=True, help='file with allocation information')
@@ -81,7 +81,7 @@ def get_pi(row):
 	return pi
 
 
-def merge_data(labels, usage_file, account_file, org_file, capacity_file, hours, groups=['Allocation']):
+def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=['Allocation']) -> pd.DataFrame:
 	capacity_df = pd.read_csv(capacity_file, delimiter='|')
 	capacity_df['GPU devices'] = capacity_df.apply(lambda row: gpu_devices(row), axis=1)  
 	capacity_df = capacity_df.groupby(['PARTITION']).agg({"NODELIST": len, "CPUS": np.sum, "GPU devices": np.sum})
@@ -91,7 +91,7 @@ def merge_data(labels, usage_file, account_file, org_file, capacity_file, hours,
 	print(capacity_df)
 	capacity_df.to_csv(f"{capacity_file[:-4]}-summary.csv")
 
-	usage_df = pd.read_csv(usage_file, delimiter="|")  # r"\s+", names=labels) #, header=0, skiprows=7)
+	usage_df = pd.read_csv(usage_file, delimiter="|")  
 	usage_df['Total CPU hours'] = usage_df['cputimeraw'] / 3600
 	usage_df['GPU devices'] = usage_df['alloctres'].str.extract(r'gres/gpu=(\d+)').fillna(0).astype(
 		int)  
@@ -100,6 +100,7 @@ def merge_data(labels, usage_file, account_file, org_file, capacity_file, hours,
 	usage_df['JobType'] = usage_df.apply(lambda row: job_type(row), axis=1)
 	usage_df['Utilization'] = usage_df.apply(lambda row: utilization(row, cap_dict), axis=1)
 	usage_df['PartitionType'] = usage_df.apply(lambda row: partition_type(row), axis=1)
+	usage_df['Wait Time'] = usage_df['resvcpuraw'] / usage_df['reqcpus'] / 3600
 
 	usage_df = usage_df.drop(columns=["cputimeraw", "alloccpus", "GPU devices"])
 	if "Utilization" in usage_df:
@@ -131,18 +132,18 @@ def save_df(df: pd.DataFrame, filepath=".", fname="rivanna-stats") -> None:
 
 
 def apply_filter(df: pd.DataFrame, filter_dict) -> pd.DataFrame:
-	print (f"Applying filter {filter_dict} to columns={df.columns.values}")
+	print(f"Applying filter {filter_dict} to columns={df.columns.values}")
 	if "all" in filter_dict.keys():
 		# nothing to do 
 		return df
 	# drop keys that don't exist in dataframe
-	filter_dict = {k:v for k,v in filter_dict.items() if k in df.columns.values}
+	filter_dict = {k: v for k, v in filter_dict.items() if k in df.columns.values}
 
 	if len(filter_dict) == 0:
 		# filter column not present, nothing to do
 		return pd.DataFrame(columns=df.columns.values)
 
-	print (f"filter_dict={filter_dict}")
+	print(f"filter_dict={filter_dict}")
 	if len(filter_dict) == 1:
 		# filter by single column
 		key_col = list(filter_dict.keys())[0]
@@ -154,13 +155,13 @@ def apply_filter(df: pd.DataFrame, filter_dict) -> pd.DataFrame:
 		filter_idx = pd.MultiIndex.from_product(fvalue_list, names=list(filter_dict)) 
 		df_idx = pd.MultiIndex.from_frame(df[filter_dict.keys()])
 		filtered_df = df.loc[df_idx.isin(filter_idx)]
-	print (filtered_df.groupby(list(filter_dict)).sum(numeric_only=True))
+	print(filtered_df.groupby(list(filter_dict)).sum(numeric_only=True))
 	return filtered_df
 
 
 def parse_filter(farg: str) -> list:
 	"""Example:
-	    in:
+		in:
 		"School:[DS,EN,MD];Description:[standard,purchase]|Status:[Staff,Faculty]"
 
 		out: list of dict
@@ -187,46 +188,66 @@ def parse_filter(farg: str) -> list:
 				fd[kv[0]] = None
 		filter_list.append(fd) 
 	if not any("all" in d for d in filter_list):
-		filter_list.append({"all":None})
-	return filter_list    
+		filter_list.append({"all": None})
+	return filter_list
 
 
-if __name__ == '__main__':
+def parse_args() -> argparse.Namespace:
 	parser = init_parser()
-	args = parser.parse_args()
-	filters = parse_filter(args.filter)
+	return parser.parse_args()
+
+
+def prepare_analysis_groups(args) -> (list, list):
+	"""Prepares and returns analysis groups and aggregation groups."""
 	agroups = list(set(args.groups.replace('|', ',').split(',')))
 	if 'Allocation' not in agroups:
 		agroups.append('Allocation')
 	analysis = args.groups.split('|')
-	hours = float(args.days) * 24
-	df = merge_data(args.labels, args.usage, args.allocations, args.organizations, args.capacity, hours, groups=agroups)
-	filters = parse_filter(args.filter)
+	return agroups, analysis
 
+
+def perform_analysis(df, analysis, filters, args):
+	"""Performs the data analysis based on the groups and filters."""
 	for r in analysis:
 		print(''.join(["#"] * 80))
 		groups = r.split(',') if args.groups != '' else ['Allocation']
 		print(f'Analyzing by {r}, {groups}')
-		for filter in filters:
-			print (f"Filtering by {filter}")
-			sum_df = df.groupby(groups).sum().reset_index()  
-			ftrunk, ext = os.path.splitext(args.output)
-			# flatten filter values which is a list of lists
-			if list(filter.values())[0] is not None:
-				f_values = [v for values in filter.values() for v in values]
-				filter_str = "-".join(f_values)
-			else:
-				filter_str = "-".join(filter.keys())
-			print (f"filter_str={filter_str}")
-			filepath = args.path.replace("{FILTER}", filter_str)
-			fname = f"{ftrunk}-{''.join(groups)}-{filter_str}{ext}"
-			print(f"filepath={filepath}, fname={fname}")
-			filtered_df  = apply_filter(sum_df, filter)
-			save_df(filtered_df, filepath=filepath, fname=fname)
-			
-			print(filtered_df)
-			print("------------------------------------")
-			print(f"Total CPU Hours: {filtered_df['Total CPU hours'].sum():,.2f}")
-			print(f"Total GPU Device Hours: {filtered_df['Total GPU hours'].sum():,.2f}")
-			
-			groups = r.split(',') if args.groups != '' else ['User']
+		process_filters(df, groups, filters, args)
+
+
+def process_filters(df, groups, filters, args):
+	"""Processes filters and outputs analysis results."""
+	for f in filters:
+		print(f"Filtering by {f}")
+		sum_df = df.groupby(groups).sum().reset_index()
+		output_analysis_results(sum_df, groups, f, args)
+
+
+def output_analysis_results(df, groups, filter_criteria, args):
+	"""Saves the filtered DataFrame and prints analysis results."""
+	ftrunk, ext = os.path.splitext(args.output)
+	# Flatten filter values which is a list of lists
+	if list(filter_criteria.values())[0] is not None:
+		f_values = [v for values in filter_criteria.values() for v in values]
+		filter_str = "-".join(f_values)
+	else:
+		filter_str = "-".join(filter_criteria.keys())
+	filepath = args.path.replace("{FILTER}", filter_str)
+	fname = f"{ftrunk}-{''.join(groups)}-{filter_str}{ext}"
+	print(f"filepath={filepath}, fname={fname}")
+	filtered_df = apply_filter(df, filter_criteria)
+	save_df(filtered_df, filepath=filepath, fname=fname)
+
+	print(filtered_df)
+	print("------------------------------------")
+	print(f"Total CPU Hours: {filtered_df['Total CPU hours'].sum():,.2f}")
+	print(f"Total GPU Device Hours: {filtered_df['Total GPU hours'].sum():,.2f}")
+
+
+if __name__ == '__main__':
+	args = parse_args()
+	filters = parse_filter(args.filter)
+	agroups, analysis = prepare_analysis_groups(args)
+	hours = float(args.days) * 24
+	df = merge_data(args.usage, args.allocations, args.organizations, args.capacity, hours, groups=agroups)
+	perform_analysis(df, analysis, filters, args)

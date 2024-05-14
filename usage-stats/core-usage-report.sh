@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# change condition to account for FILTER argument
 if [ "$#" -ne 6 ]; then
     echo "Usage: `basename $0` YYYY-MM-DDThh:mm:ss YYYY-MM-DDThh:mm:ss outputfile days-in-period filter outputpath"
     exit 1
@@ -23,7 +22,7 @@ ALLOC_FILE=${OUTPUTPATH}/rivanna-allocations-$today.txt
 ORG_FILE=${OUTPUTPATH}/rivanna-organizations-$today.txt
 
 
-COLUMNS="user,jobname%30,account%50,cputimeraw,alloctres,alloccpus,partition,reserved,state"
+COLUMNS="user,jobname%30,account%50,cputimeraw,alloctres,alloccpus,partition,reserved,state,resvcpuraw,reqcpus,submit,start,end"
 LABELS="${COLUMNS/"account%50"/Allocation}" 
 LABELS="${LABELS/"jobname%30"/JobName}"
 echo "$LABELS" | tr \, \| > $CORE_USAGE_FILE
@@ -34,7 +33,7 @@ sinfo -N --format="%R|%N|%T|%c|%G" > $CAPACITY_FILE
 
 sudo /opt/mam/current/bin/mam-list-accounts > $ALLOC_FILE
 /opt/mam/current/bin/mam-list-organizations > $ORG_FILE
-refactor-orgfile.py $ORG_FILE # refactor organization acronyms
+refactor-orgfile.py $ORG_FILE 
 
 sed -i 's/Health_Volunteer Volunteer sponsored/Health_Volunteer_Volunteer_sponsored/g' $ALLOC_FILE
 sed -i 's/Health_Volunteer Volunteer sponsored/Health_Volunteer_Volunteer_sponsored/g' $ORG_FILE
