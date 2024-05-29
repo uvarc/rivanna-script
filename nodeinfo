@@ -5,6 +5,7 @@
 # 2021-03-09
 
 ALL_NAME=()
+ALL_SYSTEM=()
 ALL_CORE=()
 ALL_MEMORY=()
 ALL_NUMNODE=()
@@ -24,7 +25,7 @@ function append {
         fi
     done
 
-    for i in NAME CORE MEMORY GPUNAME GPUMEMORY GPU; do
+    for i in NAME SYSTEM CORE MEMORY GPUNAME GPUMEMORY GPU; do
         eval ALL_${i}+=\("$1"\)
         shift
     done
@@ -36,21 +37,21 @@ function report {
 # print memory in GB
 # replace KNL's 256 with 64 physical cores
 # RTX2080 -> RTX2080Ti
-    echo "Cores/Node,Memory/Node,Specialty Hardware,GPU memory/Device,GPU devices/Node,# of Nodes"
+    echo "System,Cores/Node,Memory/Node,Specialty Hardware,GPU memory/Device,GPU devices/Node,# of Nodes"
     for i in ${!ALL_NAME[@]}; do
-        printf -- "%d,%s,%s,%s,%s,%s\n" \
-            "${ALL_CORE[$i]}" "$((ALL_MEMORY[$i]/1000))GB" \
+        printf -- "%s,%d,%s,%s,%s,%s,%s\n" \
+            "${ALL_SYSTEM[$i]}" "${ALL_CORE[$i]}" "$((ALL_MEMORY[$i]/1024))GB" \
             "${ALL_GPUNAME[$i]}" "${ALL_GPUMEMORY[$i]}" "${ALL_GPU[$i]}" \
             "${ALL_NUMNODE[$i]}"
-    done | sort -t, -k3 | \
-    awk -F, -v OFS=, '{if($3!="-") {sub(/^/, "GPU: ", $3); print} else print}' | \
+    done | sort -t, -k4 | \
+    awk -F, -v OFS=, '{if($4!="-") {sub(/^/, "GPU: ", $4); print} else print}' | \
     sed -e 's/^256,180GB,-/64,180GB,KNL/' \
         -e 's/RTX2080/RTX2080Ti/g' \
         -e '/112GB/d'
 }
 
 NODES=($(scontrol show hostnames $(sinfo -ho "%N")))
-#NODES=($(scontrol show hostnames $(sinfo -p gpu -ho "%N")))
+#NODES=($(scontrol show hostnames $(sinfo -p interactive -ho "%N")))
 NUM_NODES=${#NODES[@]}
 
 for i in ${!NODES[@]}; do
@@ -64,18 +65,12 @@ for i in ${!NODES[@]}; do
 
     if [[ "$PARTITION" = "gpu" || "$PARTITION" = "bii-gpu" ]]; then
 # get first feature
-        GPUNAME=$(getval "$INFO" AvailableFeatures|sed 's/,.*$//')
+        GPUNAME=$(getval "$INFO" AvailableFeatures|sed 's/[,:].*$//')
         GPUNAME="${GPUNAME^^}"
         GPU=$(getval "$INFO" CfgTRES)
 
 # hardcode GPU memory
         case $GPUNAME in
-        K80)
-            GPUMEMORY="11GB"
-            ;;
-        P100)
-            GPUMEMORY="12GB"
-            ;;
         RTX2080)
             GPUMEMORY="11GB"
             ;;
@@ -101,16 +96,47 @@ for i in ${!NODES[@]}; do
         A6000)
             GPUMEMORY="48GB"
             ;;
+        A40)
+            GPUMEMORY="48GB"
+            ;;
         esac
+
+        # all GPUs listed as Afton
+        SYSTEM=Afton
     else
-        GPUNAME="-"
-        GPUMEMORY="-"
-        GPU="-"
+        # interactive GPUs
+        if getval "$INFO" AvailableFeatures|grep -q rtx; then
+            GPUNAME=$(getval "$INFO" AvailableFeatures|sed 's/[,:].*$//')
+            GPUNAME="${GPUNAME^^}"
+            GPU=$(getval "$INFO" CfgTRES)
+            case $GPUNAME in
+                RTX2080)
+                    GPUMEMORY="11GB"
+                    ;;
+                RTX3090)
+                    GPUMEMORY="24GB"
+                    ;;
+            esac
+            SYSTEM=Afton
+        else
+            GPUNAME="-"
+            GPUMEMORY="-"
+            GPU="-"
+
+            SYSTEM=Rivanna
+            # Rivanna or Afton
+            # as of 2024-05 Afton only contains 96-core EPYC nodes 
+            if [ $(getval "$INFO" AvailableFeatures|sed 's/[,:].*$//') = "epyc" ]; then
+                if [ $CORE -eq 96 ]; then
+                    SYSTEM=Afton
+                fi
+            fi
+        fi
     fi
 
     NAME="${CORE}_${MEMORY}_${GPUNAME}"
 
-    append $NAME $CORE $MEMORY $GPUNAME $GPUMEMORY $GPU
+    append $NAME $SYSTEM $CORE $MEMORY $GPUNAME $GPUMEMORY $GPU
     count=$((count+1))
 done
 
