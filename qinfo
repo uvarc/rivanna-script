@@ -7,7 +7,7 @@ CSV=qinfo.csv
 
 echo "Partition,Purpose,Max time / job,Max nodes / job,Max cores / job,Max cores / node,Default memory / core,Max memory / node / job,SU Charge Rate" > $CSV
 
-for p in standard parallel largemem gpu interactive; do
+for p in standard parallel gpu interactive; do
     # MaxTime, MaxNodes, DefMemPerCPU
     eval $(scontrol show partition -o $p|tr ' ' '\n')
 
@@ -51,7 +51,8 @@ for p in standard parallel largemem gpu interactive; do
     # MaxMemPerNode
     case $p in
     standard)
-        MaxMemPerNode="$((MaxMemPerCPU * (MaxCoresPerJob+3) / 1024))GB"
+        #MaxMemPerNode="$((MaxMemPerCPU * (MaxCoresPerJob+3) / 1024))GB"
+        MaxMemPerNode="1462GB"
         ;;
     largemem)
         MaxMemPerNode="$((MaxMemPerCPU * MaxCoresPerJob / 1024))GB"
@@ -75,7 +76,7 @@ for p in standard parallel largemem gpu interactive; do
     case $p in
     standard) Purpose="For jobs on a single compute node" ;;
     parallel) Purpose="For large parallel jobs on up to $MaxNodes nodes" ;;
-    largemem) Purpose="For memory intensive jobs" ;;
+    #largemem) Purpose="For memory intensive jobs" ;;
     gpu) Purpose="For jobs using general purpose graphical processing units" ;;
     #dev) Purpose="For quick tests" ;;
     interactive) Purpose="For quick interactive sessions" ;;
