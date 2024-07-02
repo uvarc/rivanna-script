@@ -126,7 +126,7 @@ for i in ${!NODES[@]}; do
             SYSTEM=Rivanna
             # Rivanna or Afton
             # as of 2024-05 Afton only contains 96-core EPYC nodes 
-            if [ $(getval "$INFO" AvailableFeatures|sed 's/[,:].*$//') = "epyc" ]; then
+            if [ $(getval "$INFO" AvailableFeatures|sed 's/[,:].*$//') = "afton" ]; then
                 if [ $CORE -eq 96 ]; then
                     SYSTEM=Afton
                 fi
