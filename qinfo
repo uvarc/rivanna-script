@@ -42,11 +42,8 @@ for p in standard parallel gpu interactive; do
     esac
 
     # weka client takes 3 cores except parallel 
+    # 2024-07-02 weka non-dedicated
     MaxCoresPerNode=$(sinfo -p $p -ho '%n %c'|sort -nk2|tail -1|awk '{print $2}')
-    case $p in
-    parallel) MaxCoresPerNode=$MaxCoresPerNode ;;
-    *) MaxCoresPerNode=$((MaxCoresPerNode - 3)) ;;
-    esac
 
     # MaxMemPerNode
     case $p in
