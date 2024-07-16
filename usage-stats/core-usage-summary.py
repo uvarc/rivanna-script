@@ -98,7 +98,7 @@ def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=
 	usage_df['Total GPU hours'] = usage_df.apply(lambda row: calc_gpu_hours(row), axis=1)
 	usage_df['state'] = usage_df.apply(lambda row: job_state(row), axis=1)
 	usage_df['JobType'] = usage_df.apply(lambda row: job_type(row), axis=1)
-	usage_df['Utilization'] = usage_df.apply(lambda row: utilization(row, cap_dict), axis=1)
+	#usage_df['Utilization'] = usage_df.apply(lambda row: utilization(row, cap_dict), axis=1)
 	usage_df['PartitionType'] = usage_df.apply(lambda row: partition_type(row), axis=1)
 	usage_df['Wait Time'] = usage_df['resvcpuraw'] / usage_df['reqcpus'] / 3600
 
