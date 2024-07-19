@@ -10,6 +10,15 @@ To clone the repository, use the following command in your terminal:
 git clone https://github.com/galitz-matt/rivanna-script.git
 ```
 
+## Setting the PATH
+
+Before running the scripts, you need to ensure you are in the repository's script directory. 
+
+```bash
+cd /path/to/repo/rivanna-script/usage-stats/
+```
+Replace `path/to/repo` with the path where you have cloned the repository (do not include the "rivanna-script" portion of the path). 
+
 ## Running the Install Script
 
 Before using the scripts, you need to run the `install.sh` script to set up the necessary environment. This script will create a Conda environment with all required dependencies.
