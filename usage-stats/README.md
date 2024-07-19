@@ -12,7 +12,7 @@ git clone https://github.com/galitz-matt/rivanna-script.git
 
 ## Setting the PATH
 
-Before running the scripts, you need to ensure you are in the repository's script directory. 
+Before running the scripts, make sure you are in the repository's script directory. 
 
 ```bash
 cd /path/to/repo/rivanna-script/usage-stats/
