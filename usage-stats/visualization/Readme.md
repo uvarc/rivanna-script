@@ -19,6 +19,6 @@ The data for each month is stored in `/project/rivanna-scripts/all`. Before runn
 The key metrics of interest are:
 - **Total GPU Hours**
 - **Total CPU Hours**
-- **Wait Time hours**: Includes a focus on the average Wait Time hours.
+- **Wait Time Hours**: Includes a focus on the average Wait Time hours.
 
 Ensure the correct paths are set in the scripts before execution to generate accurate visualizations.
