@@ -5,15 +5,20 @@
 # 2020-09-09
 
 if [ $# -lt 2 ]; then
-    echo "Usage: `basename $0` image /path/to/site-packages [python_cmd]"
+    echo "Usage: `basename $0` image /path/to/site-packages [python_cmd] [module]"
     exit 1
 fi
 IMG=$1
 DIR=$2
 PYTHON="python"
 
-if [ $# -eq 3 ]; then
+if [ $# -ge 3 ]; then
     PYTHON=$3
+fi
+
+if [ $# -eq 4 ]; then
+    shift 3
+    MODULES=($@)
 fi
 
 # check for lsof
@@ -24,8 +29,10 @@ if [ $? -ne 0 ]; then
 fi
 
 # python module list
-MODULES=($(docker run --rm $IMG ls -1 $DIR | \
-    grep -vE "dist-info|^_|\.|README"))
+if [ -z "$MODULES" ]; then
+    MODULES=($(docker run --rm $IMG ls -1 $DIR | \
+        grep -vE "dist-info|^_|\.|README"))
+fi
 
 BEFORE=$(mktemp)
 AFTER=$(mktemp)

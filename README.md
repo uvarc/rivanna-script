@@ -29,3 +29,7 @@ Miscellaneous scripts for Rivanna
 - `getpylib` - Find library dependencies of Python packages (Docker multistage build)
 - `pypkgver` - Find latest version of Python packages via conda or pip
 - `syslib` - Multi-search installed system libraries
+
+# Citation
+
+- `jkrollout` script: R. Sun and K. Siller, [HPC Container Management at the University of Virginia](https://doi.org/10.1145/3626203.3670568), PEARC '24: Practice and Experience in Advanced Research Computing 2024: Human Powered Computing 73, 1 (2024).
