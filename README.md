@@ -32,4 +32,4 @@ Miscellaneous scripts for Rivanna
 
 # Citation
 
-- `jkrollout` script: R. Sun and K. Siller, [HPC Container Management at the University of Virginia](https://doi.org/10.1145/3626203.3670568), PEARC '24: Practice and Experience in Advanced Research Computing 2024: Human Powered Computing 73, 1 (2024).
+- `jkrollout`: R. Sun and K. Siller, HPC Container Management at the University of Virginia, PEARC '24: Practice and Experience in Advanced Research Computing 2024: Human Powered Computing 73, 1 (2024). [doi:10.1145/3626203.3670568](https://doi.org/10.1145/3626203.3670568)
