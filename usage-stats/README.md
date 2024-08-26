@@ -70,9 +70,18 @@ Abbreviations:
 Make sure to replace the arguments with values that match your requirements.
 
 ## Scheduling the Monthly Report Script with Scrontab
-#### As of the time of publication (April 2, 2024) scrontab is only enabled on the derp cluster.
+#### Before running, please ensure that Scrontab is enabled on your cluster.
 The Rivanna HPC system uses `scrontab`, a Slurm crontab tool, to schedule jobs to run at regular intervals. This section outlines how to schedule the `schedule-monthly-report.sh` script to automatically run at the beginning of each month to generate the previous month's report.
-
+### Step 0: Add an environment variable
+Add the `usage-stats` directory to the environment variable permanently.
+```bash
+export PATH="$PATH:/path/to/repo/rivanna-script/usage-stats/"
+source ~/.bashrc
+```
+Check if the environment's PATH includes the `usage-stats` directory.
+```bash
+echo $PATH
+```
 ### Step 1: Prepare the Script
 Configure your `scron.sh`. There are directions included within the script on what to change denoted by `TODO`.
 
@@ -87,6 +96,14 @@ This command opens your user-specific scrontab file in the default text editor s
 In the editor, add a new line to schedule your script. To run it at the beginning of each month, use the following crontab syntax:
 ```
 0 0 1 * * /path/to/your/scron.sh
+```
+You may need to specify the parameters such as partition,account and time limitation.
+For example,
+```
+#SCRON -p standard
+#SCRON -A rivanna-training
+#SCRON -t 00:30:00
+0 0 1 * *  /path/to/repo/rivanna-script/usage-stats/scron.sh
 ```
 
 ### Step 4: Save and Exit
