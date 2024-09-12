@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from datetime import datetime
 import numpy as np
 import pandas as pd
 import argparse
@@ -81,6 +82,13 @@ def get_pi(row):
 	return pi
 
 
+def get_time_delta(df, col1, col2):
+        date_format = "%Y-%m-%dT%H:%M:%S"
+        df[col1] = pd.to_datetime(df[col1], format=date_format)
+        df[col2] = pd.to_datetime(df[col2], format=date_format) 
+        return (df[col2] - df[col1]).dt.total_seconds() / 3600
+
+
 def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=['Allocation']) -> pd.DataFrame:
 	capacity_df = pd.read_csv(capacity_file, delimiter='|')
 	capacity_df['GPU devices'] = capacity_df.apply(lambda row: gpu_devices(row), axis=1)  
@@ -100,15 +108,15 @@ def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=
 	usage_df['JobType'] = usage_df.apply(lambda row: job_type(row), axis=1)
 	#usage_df['Utilization'] = usage_df.apply(lambda row: utilization(row, cap_dict), axis=1)
 	usage_df['PartitionType'] = usage_df.apply(lambda row: partition_type(row), axis=1)
-	usage_df['Wait Time hours'] = usage_df['resvcpuraw'] / usage_df['reqcpus'] / 3600
-
+	usage_df['Wait Time (hr)'] = get_time_delta(usage_df, 'submit', 'end')
+        usage_df['Run Time (hr)'] = get_time_delta(usage_df, 'start', 'end')
 	usage_df = usage_df.drop(columns=["cputimeraw", "alloccpus", "GPU devices"])
 	if "Utilization" in usage_df:
 		usage_df = usage_df.drop(columns=["Utilization"])
 
 	org_groups = [g for g in groups if g in usage_df.columns.values]
 	#usage_df = usage_df.groupby(org_groups).sum().reset_index()
-	usage_df = usage_df = usage_df.groupby(org_groups).agg({'resvcpuraw': 'sum','reqcpus': 'sum','Total CPU hours': 'sum','Total GPU hours': 'sum','Wait Time hours': 'mean'}).reset_index() #sum to average
+	usage_df = usage_df = usage_df.groupby(org_groups).agg({'Total CPU hours': 'sum','Total GPU hours': 'sum','Wait Time hours': 'mean'}).reset_index() #sum to average
 	print(usage_df)
 
 	org_df = pd.read_csv(org_file, delimiter=r"\s+", header=0, names=['Organization', 'School'])
