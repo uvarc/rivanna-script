@@ -89,7 +89,7 @@ for i in ${!IN[@]}; do
             SCHOOL_DEPT=$(parse_ldap uvaDisplayDepartment $TMPLDAP)
 
             # deal with school & department
-            case "${SCHOOL_DEPT%-*}" in
+            case "${SCHOOL_DEPT%%-*}" in
                 "AS"|"Arts_&_Sciences_Graduate")
                     SCHOOL=CLAS ;;
                 "DS"|"Data_Science"|"Data_Science_Graduate")
