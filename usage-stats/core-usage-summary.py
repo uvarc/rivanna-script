@@ -27,10 +27,15 @@ def init_parser() -> argparse.ArgumentParser:
 
 
 def calc_gpu_hours(row):
-	if row['alloccpus'] != 0:
-		return row['GPU devices'] * row['Total CPU hours'] / row['alloccpus']
-	else:
-		return 0.0
+	try: 
+		alloccpus = float(row['alloccpus'])
+		if alloccpus != 0:
+			return row['GPU devices'] * row['Total CPU hours'] / alloccpus 
+		else:
+			return 0.0
+	except (ValueError, TypeError) as e:
+		print(f"Error occurred when calculating gpu hours: {e}")
+		return 0 
 
 
 def job_type(row):
@@ -83,10 +88,12 @@ def get_pi(row):
 
 
 def get_time_delta(df, col1, col2):
-        date_format = "%Y-%m-%dT%H:%M:%S"
-        df[col1] = pd.to_datetime(df[col1], format=date_format)
-        df[col2] = pd.to_datetime(df[col2], format=date_format) 
-        return (df[col2] - df[col1]).dt.total_seconds() / 3600
+	date_format = "%Y-%m-%dT%H:%M:%S"
+	df[col1] = pd.to_datetime(df[col1], format=date_format, errors="coerce")
+	df[col2] = pd.to_datetime(df[col2], format=date_format, errors="coerce") 
+	time_delta = (df[col2] - df[col1]).dt.total_seconds() / 3600
+	time_delta = time_delta.replace([np.inf, -np.inf], np.nan)
+	return time_delta
 
 
 def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=['Allocation']) -> pd.DataFrame:
@@ -100,23 +107,23 @@ def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=
 	capacity_df.to_csv(f"{capacity_file[:-4]}-summary.csv")
 
 	usage_df = pd.read_csv(usage_file, delimiter="|")  
-	usage_df['Total CPU hours'] = usage_df['cputimeraw'] / 3600
-	usage_df['GPU devices'] = usage_df['alloctres'].str.extract(r'gres/gpu=(\d+)').fillna(0).astype(
-		int)  
+	numeric_cputimeraw = pd.to_numeric(usage_df['cputimeraw'], errors='coerce')
+	usage_df['Total CPU hours'] = numeric_cputimeraw / 3600
+	usage_df['GPU devices'] = usage_df['alloctres'].str.extract(r'gres/gpu=(\d+)').fillna(0).astype(int)
 	usage_df['Total GPU hours'] = usage_df.apply(lambda row: calc_gpu_hours(row), axis=1)
 	usage_df['state'] = usage_df.apply(lambda row: job_state(row), axis=1)
 	usage_df['JobType'] = usage_df.apply(lambda row: job_type(row), axis=1)
 	#usage_df['Utilization'] = usage_df.apply(lambda row: utilization(row, cap_dict), axis=1)
 	usage_df['PartitionType'] = usage_df.apply(lambda row: partition_type(row), axis=1)
 	usage_df['Wait Time (hr)'] = get_time_delta(usage_df, 'submit', 'end')
-        usage_df['Run Time (hr)'] = get_time_delta(usage_df, 'start', 'end')
+	usage_df['Run Time (hr)'] = get_time_delta(usage_df, 'start', 'end')
 	usage_df = usage_df.drop(columns=["cputimeraw", "alloccpus", "GPU devices"])
 	if "Utilization" in usage_df:
 		usage_df = usage_df.drop(columns=["Utilization"])
 
 	org_groups = [g for g in groups if g in usage_df.columns.values]
 	#usage_df = usage_df.groupby(org_groups).sum().reset_index()
-	usage_df = usage_df = usage_df.groupby(org_groups).agg({'Total CPU hours': 'sum','Total GPU hours': 'sum','Wait Time hours': 'mean'}).reset_index() #sum to average
+	usage_df = usage_df = usage_df.groupby(org_groups).agg({'Total CPU hours': 'sum','Total GPU hours': 'sum','Wait Time (hr)': 'mean'}).reset_index() #sum to average
 	print(usage_df)
 
 	org_df = pd.read_csv(org_file, delimiter=r"\s+", header=0, names=['Organization', 'School'])

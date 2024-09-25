@@ -22,7 +22,7 @@ ALLOC_FILE=${OUTPUTPATH}/rivanna-allocations-$today.txt
 ORG_FILE=${OUTPUTPATH}/rivanna-organizations-$today.txt
 
 
-COLUMNS="user,jobname%30,account%50,cputimeraw,alloctres,alloccpus,partition,planned,state,plannedcpuraw,reqcpus,submit,start,end"
+COLUMNS="user,jobname%30,account%50,jobid,cputimeraw,alloctres,alloccpus,partition,planned,state,plannedcpuraw,reqcpus,submit,start,end"
 LABELS="${COLUMNS/"account%50"/Allocation}" 
 LABELS="${LABELS/"jobname%30"/JobName}"
 LABELS="${LABELS/"planned"/reserved}"
