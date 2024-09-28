@@ -111,6 +111,8 @@ def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=
         capacity_df.to_csv(f"{capacity_file[:-4]}-summary.csv")
 
         usage_df = pd.read_csv(usage_file, delimiter="|")  
+        usage_df = usage_df[~usage_df['start'].isnull()]
+        usage_df = usage_df[~usage_df['paritition'].str.contains(',')]
         usage_df['Total CPU hours'] = usage_df['cputimeraw'] / 3600
         usage_df['GPU devices'] = usage_df['alloctres'].str.extract(r'gres/gpu=(\d+)').fillna(0).astype(int)
         usage_df['Total GPU hours'] = usage_df.apply(lambda row: calc_gpu_hours(row), axis=1)

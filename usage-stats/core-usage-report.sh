@@ -30,7 +30,7 @@ LABELS="${LABELS/"plannedcpuraw"/resvcpuraw}"
 
 echo "$LABELS" | tr \, \| > $CORE_USAGE_FILE
 TZ=UTC sacct -P -n -a -X -S ${START} -E ${END} -s ${STATES} --format=${COLUMNS} >> $CORE_USAGE_FILE
-sed -i 's/chr.*slurm/chr slurm/g' $CORE_USAGE_FILE
+# sed -i 's/chr.*slurm/chr slurm/g' $CORE_USAGE_FILE
 
 sinfo -N --format="%R|%N|%T|%c|%G" > $CAPACITY_FILE
 
