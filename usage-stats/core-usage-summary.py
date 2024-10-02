@@ -112,7 +112,7 @@ def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=
 
         usage_df = pd.read_csv(usage_file, delimiter="|")  
         usage_df = usage_df[~usage_df['start'].isnull()]
-        usage_df = usage_df[~usage_df['paritition'].str.contains(',')]
+        usage_df = usage_df[~usage_df['partition'].str.contains(',')]
         usage_df['Total CPU hours'] = usage_df['cputimeraw'] / 3600
         usage_df['GPU devices'] = usage_df['alloctres'].str.extract(r'gres/gpu=(\d+)').fillna(0).astype(int)
         usage_df['Total GPU hours'] = usage_df.apply(lambda row: calc_gpu_hours(row), axis=1)
@@ -128,7 +128,7 @@ def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=
 
         org_groups = [g for g in groups if g in usage_df.columns.values]
         #usage_df = usage_df.groupby(org_groups).sum().reset_index()
-        usage_df = usage_df = usage_df.groupby(org_groups).agg({'Total CPU hours': 'sum','Total GPU hours': 'sum','Wait Time (hr)': 'mean'}).reset_index() #sum to average
+        usage_df = usage_df.groupby(org_groups).agg({'Total CPU hours': 'sum','Total GPU hours': 'sum','Wait Time (hr)': 'mean', 'Run Time (hr)': 'mean'}).reset_index() #sum to average
         print(usage_df)
 
         org_df = pd.read_csv(org_file, delimiter=r"\s+", header=0, names=['Organization', 'School'])
