@@ -120,8 +120,9 @@ def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=
         usage_df['JobType'] = usage_df.apply(lambda row: job_type(row), axis=1)
         #usage_df['Utilization'] = usage_df.apply(lambda row: utilization(row, cap_dict), axis=1)
         usage_df['PartitionType'] = usage_df.apply(lambda row: partition_type(row), axis=1)
-        usage_df['Wait Time (hr)'] = get_time_delta(usage_df, 'submit', 'end')
-        usage_df['Run Time (hr)'] = get_time_delta(usage_df, 'start', 'end')
+        usage_df['Wait Time Median (hr)'] = get_time_delta(usage_df, 'submit', 'start')
+        usage_df['Run Time Median (hr)'] = get_time_delta(usage_df, 'start', 'end')
+        usage_df['Job Count'] = 1 # dummy column
         usage_df = usage_df.drop(columns=["cputimeraw", "alloccpus", "GPU devices"])
         if "Utilization" in usage_df:
                 usage_df = usage_df.drop(columns=["Utilization"])
@@ -129,20 +130,19 @@ def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=
         org_groups = [g for g in groups if g in usage_df.columns.values]
         #usage_df = usage_df.groupby(org_groups).sum().reset_index()
         # Calculate the 95th and 99th percentiles for Wait Time and Run Time before aggregation
-        usage_df['Wait Time 95th Percentile (hr)'] = usage_df.groupby(org_groups)['Wait Time (hr)'].transform(lambda x: x.quantile(0.95))
-        usage_df['Wait Time 99th Percentile (hr)'] = usage_df.groupby(org_groups)['Wait Time (hr)'].transform(lambda x: x.quantile(0.99))
-        usage_df['Run Time 95th Percentile (hr)'] = usage_df.groupby(org_groups)['Run Time (hr)'].transform(lambda x: x.quantile(0.95))
-        usage_df['Run Time 99th Percentile (hr)'] = usage_df.groupby(org_groups)['Run Time (hr)'].transform(lambda x: x.quantile(0.99))
+        usage_df['Wait Time 95th Percentile (hr)'] = usage_df.groupby(org_groups)['Wait Time Median (hr)'].transform(lambda x: x.quantile(0.95))
+        usage_df['Wait Time 99th Percentile (hr)'] = usage_df.groupby(org_groups)['Wait Time Median (hr)'].transform(lambda x: x.quantile(0.99))
+        usage_df['Run Time 95th Percentile (hr)'] = usage_df.groupby(org_groups)['Run Time Median (hr)'].transform(lambda x: x.quantile(0.95))
+        usage_df['Run Time 99th Percentile (hr)'] = usage_df.groupby(org_groups)['Run Time Median (hr)'].transform(lambda x: x.quantile(0.99))
 
-        # Now perform aggregation (e.g., sum for Total CPU/GPU hours and mean for Wait Time/Run Time)
         usage_df = usage_df.groupby(org_groups).agg({
             'Total CPU hours': 'sum',
             'Total GPU hours': 'sum',
-            'Wait Time (hr)': 'mean',
-            'Run Time (hr)': 'mean',
-            # Keep the percentiles as they are already computed
+            'Job Count': 'sum',
+            'Wait Time Median (hr)': 'median',
             'Wait Time 95th Percentile (hr)': 'first',
             'Wait Time 99th Percentile (hr)': 'first',
+            'Run Time Median (hr)': 'median',
             'Run Time 95th Percentile (hr)': 'first',
             'Run Time 99th Percentile (hr)': 'first'
         }).reset_index()
