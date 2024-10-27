@@ -36,7 +36,6 @@ OUTPUTPATH=${OUTPUTPATH}
 ENTRY="core-usage-summary.py"
 CORE_USAGE_FILE=${DATAPATH}/rivanna-corehours-${START}-${END}.csv
 CAPACITY_FILE=${DATAPATH}/rivanna-capacity-${START}-${END}.csv
-# these are hard coded variables that must be changed manually
 ALLOC_FILE=${DATAPATH}/rivanna-allocations-2024-08-26.txt
 ORG_FILE=${DATAPATH}/rivanna-organizations-2024-08-26.txt
 YYYYMM=`echo $START | cut -c1-7`
