@@ -1,2 +1,4 @@
 *.csv
 *.log
+usage-stats/venv/
+usage-stats/rivanna-util-env

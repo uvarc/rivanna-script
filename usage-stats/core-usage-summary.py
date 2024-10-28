@@ -1,13 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Oct 13 14:45:33 2020
+#!/usr/bin/env python
 
-Python 3
-
-@author: khs3z
-"""
-
+from datetime import datetime
 import numpy as np
 import pandas as pd
 import argparse
@@ -16,147 +9,285 @@ import os
 
 pd.options.display.float_format = '{:,.2f}'.format
 
-def init_parser():
-    parser = argparse.ArgumentParser(
-        description='Parses SLURM core hour usage, mam account and mam organization information to create Rivanna usage stats')
-    parser.add_argument('-a', '--allocations', required=True, help='file with allocation informaton')
-    parser.add_argument('-u', '--usage', required=True, help='file with core hour usage')
-    parser.add_argument('-c', '--capacity', required=False, help='file with core and GPU device counts for each partition')
-    parser.add_argument('-x', '--organizations', required=True, help='file with mam organization info')
-    parser.add_argument('-o', '--output', required=True, help='output file')
-    parser.add_argument('-g', '--groups', required=False, default='School')
-    parser.add_argument('-d', '--days', required=True, help='reporting period in days')    
-    parser.add_argument('-l', '--labels', required=False, default='Allocation,Total CPU hours', help='comma separated list of core usage columns')
-    return parser
+
+def init_parser() -> argparse.ArgumentParser:
+        parser = argparse.ArgumentParser(
+                description='Parses SLURM core hour usage, mam account and mam organization information to create Rivanna usage stats')
+        parser.add_argument('-a', '--allocations', required=True, help='file with allocation information')
+        parser.add_argument('-u', '--usage', required=True, help='file with core hour usage')
+        parser.add_argument('-c', '--capacity', required=False, help='file with core and GPU device counts for each partition')
+        parser.add_argument('-x', '--organizations', required=True, help='file with mam organization info')
+        parser.add_argument('-o', '--output', required=True, help='output file')
+        parser.add_argument('-g', '--groups', required=False, default='School')
+        parser.add_argument('-d', '--days', required=True, help='reporting period in days')
+        parser.add_argument('-l', '--labels', required=False, default='Allocation,Total CPU hours', help='comma separated list of core usage columns')
+        parser.add_argument('-f', '--filter', required=True, help='filter')
+        parser.add_argument('-p', '--path', required=False, help='file path')
+        return parser
+
 
 def calc_gpu_hours(row):
-    if row['alloccpus'] != 0:
-        return row['GPU devices'] * row['Total CPU hours'] / row['alloccpus']
-    else:
-        return 0.0
+        try: 
+                alloccpus = float(row['alloccpus'])
+                if alloccpus != 0:
+                        return row['GPU devices'] * row['Total CPU hours'] / alloccpus 
+                else:
+                        return 0.0
+        except (ValueError, TypeError) as e:
+                print(f"Error occurred when calculating gpu hours: {e}")
+                return 0 
+
 
 def job_type(row):
-    jtype = row['JobName']
-    if jtype.startswith('ood_'):
-        jtype = f'interactive ({row["JobName"]})'
-    elif jtype.startswith('sys/dashboard'):
-        jtype = f'interactive (ood_{row["JobName"].split("/")[-1]})'
-    elif 'interactive' in jtype:
-        jtype = 'interactive (not OOD)'
-    else:
-        jtype = 'non-interactive slurm'
-    jtype = jtype.replace('rstudio_server', 'rstudio')
-    jtype = jtype.replace('jupyter_lab', 'jupyter')
-    return jtype
+        jtype = row['JobName']
+        if pd.isna(jtype): 
+            return 'N/A'
+        if jtype.startswith('ood_'):
+                jtype = f'interactive ({row["JobName"]})'
+        elif jtype.startswith('sys/dashboard'):
+                jtype = f'interactive (ood_{row["JobName"].split("/")[-1]})'
+        elif 'interactive' in jtype:
+                jtype = 'interactive (not OOD)'
+        else:
+                jtype = 'non-interactive slurm'
+        jtype = jtype.replace('rstudio_server', 'rstudio')
+        jtype = jtype.replace('jupyter_lab', 'jupyter')
+        return jtype
+
 
 def job_state(row):
-    return row['state'].split(' ')[0]
+        if pd.isna(row['state']):
+            return "N/A"
+        return row['state'].split(' ')[0]
+
 
 def gpu_devices(row):
-    devices = 0
-    pattern = r'gpu\:.*?\:(\d+)'
-    matches = re.findall(pattern,row['GRES'])
-    return sum([int(m) for m in matches])
+        pattern = r'gpu\:.*?\:(\d+)'
+        matches = re.findall(pattern, row['GRES'])
+        return sum(int(m) for m in matches)
+
 
 def utilization(row, cap_dict):
-    partition = row['partition']
-    if 'gpu' in partition:
-        util = row['Total GPU hours']/(cap_dict[partition]['GPU hours'])
-    else:
-        util = row['Total CPU hours']/(cap_dict[partition]['Core hours'])
-    return util
+        partition = row['partition']
+        if 'gpu' in partition:
+                util = row['Total GPU hours'] / (cap_dict[partition]['GPU hours'])
+        else:
+                util = row['Total CPU hours'] / (cap_dict[partition]['Core hours'])
+        return util
+
 
 def partition_type(row):
-    if row['partition'] in ['instructional', 'eqa-cs5014-18sp']:
-        return 'instructional'
-    elif row['partition'] in ['standard', 'parallel', 'largemem', 'dev', 'gpu', 'knl']:
-        return 'research'
-    else:
-        return 'condo'
+        if row['partition'] in ['instructional', 'eqa-cs5014-18sp']:
+                return 'instructional'
+        elif row['partition'] in ['standard', 'parallel', 'largemem', 'dev', 'gpu', 'knl']:
+                return 'research'
+        else:
+                return 'condo'
+
 
 def get_pi(row):
-    members = row['Users']
-    pi = members.split("^")[-1].split(",")[0]#re.search(r'\^(.*?)($|\,)', members).group(0)
-    return pi
+        members = row['Users']
+        pi = members.split("^")[-1].split(",")[0]  
+        return pi
 
-def merge_data(labels, usage_file, account_file, org_file, capacity_file, hours, groups=['Allocation']):
-    capacity_df = pd.read_csv(capacity_file, delimiter='|')
-    capacity_df['GPU devices'] = capacity_df.apply(lambda row: gpu_devices(row), axis=1) #capacity_df['GRES'].str.extract(r'gpu\:.*?\:(\d+).*').fillna(0).astype(int)
-    capacity_df = capacity_df.groupby(['PARTITION']).agg({"NODELIST":len, "CPUS":np.sum, "GPU devices": np.sum})
-    capacity_df['Core hours'] = capacity_df['CPUS'] * hours
-    capacity_df['GPU hours'] = capacity_df['GPU devices'] * hours
-    cap_dict = capacity_df.to_dict('index')    
-    print (capacity_df)
-    capacity_df.to_csv(f"{capacity_file[:-4]}-summary.csv") 
 
-    labels = labels.split(',')
-    #usage_df = pd.read_fwf(usage_file, widths=[11,51,11,11,11,11], names=labels) #, header=0, skiprows=7)
-    usage_df = pd.read_csv(usage_file, delimiter="|")#r"\s+", names=labels) #, header=0, skiprows=7)
-    #print (usage_df.head())
-    new_cols = ['Total CPU hours', 'GPU devices', 'Total GPU hours', 'state', 'JobType', 'Utilization', 'PartitionType']
-    usage_df['Total CPU hours'] = usage_df['cputimeraw']/3600 
-    usage_df['GPU devices'] = usage_df['alloctres'].str.extract(r'gres/gpu=(\d+)').fillna(0).astype(int)#.apply(lambda row:get_gpu_devices(row), axis=1)
-    #print (usage_df.head())
-    usage_df['Total GPU hours'] = usage_df.apply(lambda row: calc_gpu_hours(row), axis=1)
-    usage_df['state'] = usage_df.apply(lambda row: job_state(row), axis=1)
-    usage_df['JobType'] = usage_df.apply(lambda row: job_type(row), axis=1)
-    usage_df['Utilization'] = usage_df.apply(lambda row: utilization(row, cap_dict), axis=1)
-    usage_df['PartitionType'] = usage_df.apply(lambda row: partition_type(row), axis=1)
+def get_time_delta(df, col1, col2):
+        date_format = "%Y-%m-%dT%H:%M:%S"
+        df[col1] = pd.to_datetime(df[col1], format=date_format, errors="coerce")
+        df[col2] = pd.to_datetime(df[col2], format=date_format, errors="coerce") 
+        time_delta = (df[col2] - df[col1]).dt.total_seconds() / 3600
+        time_delta = time_delta.replace([np.inf, -np.inf], np.nan)
+        return time_delta
 
-    org_groups = [g for g in groups if g in usage_df.columns.values]
-    usage_df = usage_df.groupby(org_groups).sum().reset_index()
-    print (usage_df.head())
 
-    account_df = pd.read_csv(account_file, delimiter=r"\s+", header=0)
-    org_df = pd.read_csv(org_file, delimiter=r"\s+", header=0, names=['Organization', 'School']) 
-    cols = account_df.columns.values
-    cols[0] = "Allocation"
-    account_df.columns = cols
-    account_df['PI'] = account_df.apply(lambda row: get_pi(row), axis=1)
-    print (account_df)
+def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=['Allocation']) -> pd.DataFrame:
+        capacity_df = pd.read_csv(capacity_file, delimiter='|')
+        capacity_df['GPU devices'] = capacity_df.apply(lambda row: gpu_devices(row), axis=1)  
+        capacity_df = capacity_df.groupby(['PARTITION']).agg({"NODELIST": len, "CPUS": np.sum, "GPU devices": np.sum})
+        capacity_df['Core hours'] = capacity_df['CPUS'] * hours
+        capacity_df['GPU hours'] = capacity_df['GPU devices'] * hours
+        cap_dict = capacity_df.to_dict('index')
+        print(capacity_df)
+        capacity_df.to_csv(f"{capacity_file[:-4]}-summary.csv")
 
-    accts_and_orgs = pd.merge(account_df, org_df, on='Organization', how='outer', suffixes=('_left', '_right'))
-    print (accts_and_orgs)
-    combined = pd.merge(usage_df, accts_and_orgs, on='Allocation', how='left', suffixes=('_left', '_right'))
-    print (combined)
-    return combined
+        usage_df = pd.read_csv(usage_file, delimiter="|")  
+        usage_df = usage_df[~usage_df['start'].isnull()]
+        usage_df = usage_df[~usage_df['partition'].str.contains(',')]
+        usage_df['Total CPU hours'] = usage_df['cputimeraw'] / 3600
+        usage_df['GPU devices'] = usage_df['alloctres'].str.extract(r'gres/gpu=(\d+)').fillna(0).astype(int)
+        usage_df['Total GPU hours'] = usage_df.apply(lambda row: calc_gpu_hours(row), axis=1)
+        usage_df['state'] = usage_df.apply(lambda row: job_state(row), axis=1)
+        usage_df['JobType'] = usage_df.apply(lambda row: job_type(row), axis=1)
+        #usage_df['Utilization'] = usage_df.apply(lambda row: utilization(row, cap_dict), axis=1)
+        usage_df['PartitionType'] = usage_df.apply(lambda row: partition_type(row), axis=1)
+        usage_df['Wait Time Median (hr)'] = get_time_delta(usage_df, 'submit', 'start')
+        usage_df['Run Time Median (hr)'] = get_time_delta(usage_df, 'start', 'end')
+        usage_df['Job Count'] = 1 # dummy column
+        usage_df = usage_df.drop(columns=["cputimeraw", "alloccpus", "GPU devices"])
+        if "Utilization" in usage_df:
+                usage_df = usage_df.drop(columns=["Utilization"])
+
+        org_groups = [g for g in groups if g in usage_df.columns.values]
+        #usage_df = usage_df.groupby(org_groups).sum().reset_index()
+        # Calculate the 95th and 99th percentiles for Wait Time and Run Time before aggregation
+        usage_df['Wait Time 95th Percentile (hr)'] = usage_df.groupby(org_groups)['Wait Time Median (hr)'].transform(lambda x: x.quantile(0.95))
+        usage_df['Wait Time 99th Percentile (hr)'] = usage_df.groupby(org_groups)['Wait Time Median (hr)'].transform(lambda x: x.quantile(0.99))
+        usage_df['Run Time 95th Percentile (hr)'] = usage_df.groupby(org_groups)['Run Time Median (hr)'].transform(lambda x: x.quantile(0.95))
+        usage_df['Run Time 99th Percentile (hr)'] = usage_df.groupby(org_groups)['Run Time Median (hr)'].transform(lambda x: x.quantile(0.99))
+
+        usage_df = usage_df.groupby(org_groups).agg({
+            'Total CPU hours': 'sum',
+            'Total GPU hours': 'sum',
+            'Job Count': 'sum',
+            'Wait Time Median (hr)': 'median',
+            'Wait Time 95th Percentile (hr)': 'first',
+            'Wait Time 99th Percentile (hr)': 'first',
+            'Run Time Median (hr)': 'median',
+            'Run Time 95th Percentile (hr)': 'first',
+            'Run Time 99th Percentile (hr)': 'first'
+        }).reset_index()
+
+        # The percentiles are now included in the aggregated DataFrame
+        print(usage_df)
+
+        org_df = pd.read_csv(org_file, delimiter=r"\s+", header=0, names=['Organization', 'School'])
+        account_df = pd.read_csv(account_file, delimiter=r"\s+", header=0)
+        cols = account_df.columns.values
+        cols[0] = "Allocation"
+        account_df.columns = cols
+        account_df['PI'] = account_df.apply(lambda row: get_pi(row), axis=1)
+        print(account_df)
+
+        accts_and_orgs = pd.merge(account_df, org_df, on='Organization', how='outer', suffixes=('_left', '_right'))
+        print(accts_and_orgs)
+        combined = pd.merge(usage_df, accts_and_orgs, on='Allocation', how='left', suffixes=('_left', '_right'))
+        print(combined) 
+        return combined
+
+
+def save_df(df: pd.DataFrame, filepath=".", fname="rivanna-stats") -> None:
+        path = os.path.join(filepath, fname)
+        os.makedirs(filepath, exist_ok=True)
+        df.to_csv(path, index=False)
+
+
+def apply_filter(df: pd.DataFrame, filter_dict) -> pd.DataFrame:
+        print(f"Applying filter {filter_dict} to columns={df.columns.values}")
+        if "all" in filter_dict.keys():
+                # nothing to do 
+                return df
+        # drop keys that don't exist in dataframe
+        filter_dict = {k: v for k, v in filter_dict.items() if k in df.columns.values}
+
+        if len(filter_dict) == 0:
+                # filter column not present, nothing to do
+                return pd.DataFrame(columns=df.columns.values)
+
+        print(f"filter_dict={filter_dict}")
+        if len(filter_dict) == 1:
+                # filter by single column
+                key_col = list(filter_dict.keys())[0]
+                values = filter_dict[key_col]
+                filtered_df = df[df[key_col].isin(values)] 
+        else:
+                # create multi-index from filter dict and dataframe -> keep overlap
+                fvalue_list = [v for v in filter_dict.values()]
+                filter_idx = pd.MultiIndex.from_product(fvalue_list, names=list(filter_dict)) 
+                df_idx = pd.MultiIndex.from_frame(df[filter_dict.keys()])
+                filtered_df = df.loc[df_idx.isin(filter_idx)]
+        print(filtered_df.groupby(list(filter_dict)).sum(numeric_only=True))
+        return filtered_df
+
+
+def parse_filter(farg: str) -> list:
+        """Example:
+                in:
+                "School:[DS,EN,MD];Description:[standard,purchase]|Status:[Staff,Faculty]"
+
+                out: list of dict
+                [
+                        {
+                                'School': ['DS', 'EN', 'MD'], 
+                                'Description': ['standard', 'purchase']
+                        }, 
+                        {
+                                'Status': ['Staff', 'Faculty']
+                        }
+                ]
+        """
+        filters = farg.split("|")
+        filter_list = []
+        for f in filters:
+                items = f.split(";")
+                fd = {}
+                for item in items:
+                        kv = item.split(":")
+                        if len(kv) > 1:
+                                fd[kv[0]] = kv[1].replace("[", "").replace("]", "").split(",")
+                        else:
+                                fd[kv[0]] = None
+                filter_list.append(fd) 
+        if not any("all" in d for d in filter_list):
+                filter_list.append({"all": None})
+        return filter_list
+
+
+def parse_args() -> argparse.Namespace:
+        parser = init_parser()
+        return parser.parse_args()
+
+
+def prepare_analysis_groups(args) -> (list, list):
+        """Prepares and returns analysis groups and aggregation groups."""
+        agroups = list(set(args.groups.replace('|', ',').split(',')))
+        if 'Allocation' not in agroups:
+                agroups.append('Allocation')
+        analysis = args.groups.split('|')
+        return agroups, analysis
+
+
+def perform_analysis(df, analysis, filters, args):
+        """Performs the data analysis based on the groups and filters."""
+        for r in analysis:
+                print(''.join(["#"] * 80))
+                groups = r.split(',') if args.groups != '' else ['Allocation']
+                print(f'Analyzing by {r}, {groups}')
+                process_filters(df, groups, filters, args)
+
+
+def process_filters(df, groups, filters, args):
+        """Processes filters and outputs analysis results."""
+        for f in filters:
+                print(f"Filtering by {f}")
+                sum_df = df.groupby(groups).sum().reset_index()
+                output_analysis_results(sum_df, groups, f, args)
+
+
+def output_analysis_results(df, groups, filter_criteria, args):
+        """Saves the filtered DataFrame and prints analysis results."""
+        ftrunk, ext = os.path.splitext(args.output)
+        # Flatten filter values which is a list of lists
+        if list(filter_criteria.values())[0] is not None:
+                f_values = [v for values in filter_criteria.values() for v in values]
+                filter_str = "-".join(f_values)
+        else:
+                filter_str = "-".join(filter_criteria.keys())
+        filepath = args.path.replace("{FILTER}", filter_str)
+        fname = f"{ftrunk}-{''.join(groups)}-{filter_str}{ext}"
+        print(f"filepath={filepath}, fname={fname}")
+        filtered_df = apply_filter(df, filter_criteria)
+        save_df(filtered_df, filepath=filepath, fname=fname)
+
+        print(filtered_df)
+        print("------------------------------------")
+        print(f"Total CPU Hours: {filtered_df['Total CPU hours'].sum():,.2f}")
+        print(f"Total GPU Device Hours: {filtered_df['Total GPU hours'].sum():,.2f}")
 
 
 if __name__ == '__main__':
-    parser = init_parser()
-    args = parser.parse_args()
-    agroups = list(set(args.groups.replace('|',',').split(',')))
-    if 'Allocation' not in agroups:
-        agroups.append('Allocation')
-    print (f"agroups={agroups}")
-    analysis = args.groups.split('|')
-    hours = float(args.days) * 24
-    df = merge_data(args.labels, args.usage, args.allocations, args.organizations, args.capacity, hours, groups=agroups)
-    df.to_csv(args.output, index=False)
-    for r in analysis:
-        print (''.join(["#"]*80)) 
-        print (f'Analyzing by {r}')
-        groups = r.split(',') if args.groups != '' else ['Allocation']
-
-        sum_df = df.groupby(groups).sum()
-        ftrunk,ext = os.path.splitext(args.output)
-        fname = f"{ftrunk}-{''.join(groups)}{ext}"
-        print (fname) 
-        sum_df.reset_index().to_csv(fname, index=False)
-        print (sum_df)
-        print (sum_df.sum())  
-        print ("------------------------------------")
-        print (f"Total CPU Hours: {df['Total CPU hours'].sum():,.2f}")
-        print (f"Total GPU Device Hours: {df['Total GPU hours'].sum():,.2f}")
-
-        groups = r.split(',') if args.groups != '' else ['User']
-    
-
-
-
-    #fname = f"activeusers.csv"
-    #print (fname)
-    #active_users = active_users[active_users['cputimeraw']>0]
-    #active_users.reset_index().to_csv(fname, index=False)
-    #print (active_users)
-    #print (active_users.sum())
+        args = parse_args()
+        filters = parse_filter(args.filter)
+        agroups, analysis = prepare_analysis_groups(args)
+        hours = float(args.days) * 24
+        df = merge_data(args.usage, args.allocations, args.organizations, args.capacity, hours, groups=agroups)
+        perform_analysis(df, analysis, filters, args)
