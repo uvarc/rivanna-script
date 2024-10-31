@@ -129,25 +129,6 @@ def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=
 
         org_groups = [g for g in groups if g in usage_df.columns.values]
         #usage_df = usage_df.groupby(org_groups).sum().reset_index()
-        # Calculate the 95th and 99th percentiles for Wait Time and Run Time before aggregation
-        usage_df['Wait Time 95th Percentile (hr)'] = usage_df.groupby(org_groups)['Wait Time Median (hr)'].transform(lambda x: x.quantile(0.95))
-        usage_df['Wait Time 99th Percentile (hr)'] = usage_df.groupby(org_groups)['Wait Time Median (hr)'].transform(lambda x: x.quantile(0.99))
-        usage_df['Run Time 95th Percentile (hr)'] = usage_df.groupby(org_groups)['Run Time Median (hr)'].transform(lambda x: x.quantile(0.95))
-        usage_df['Run Time 99th Percentile (hr)'] = usage_df.groupby(org_groups)['Run Time Median (hr)'].transform(lambda x: x.quantile(0.99))
-
-        usage_df = usage_df.groupby(org_groups).agg({
-            'Total CPU hours': 'sum',
-            'Total GPU hours': 'sum',
-            'Job Count': 'sum',
-            'Wait Time Median (hr)': 'median',
-            'Wait Time 95th Percentile (hr)': 'first',
-            'Wait Time 99th Percentile (hr)': 'first',
-            'Run Time Median (hr)': 'median',
-            'Run Time 95th Percentile (hr)': 'first',
-            'Run Time 99th Percentile (hr)': 'first'
-        }).reset_index()
-
-        # The percentiles are now included in the aggregated DataFrame
         print(usage_df)
 
         org_df = pd.read_csv(org_file, delimiter=r"\s+", header=0, names=['Organization', 'School'])
@@ -257,9 +238,25 @@ def perform_analysis(df, analysis, filters, args):
 
 def process_filters(df, groups, filters, args):
         """Processes filters and outputs analysis results."""
+        sum_df = df.groupby(groups).sum().reset_index() 
+        sum_df['Wait Time 95th Percentile (hr)'] = sum_df.groupby(org_groups)['Wait Time Median (hr)'].transform(lambda x: x.quantile(0.95))
+        sum_df['Wait Time 99th Percentile (hr)'] = sum_df.groupby(org_groups)['Wait Time Median (hr)'].transform(lambda x: x.quantile(0.99))
+        sum_df['Run Time 95th Percentile (hr)'] = sum_df.groupby(org_groups)['Run Time Median (hr)'].transform(lambda x: x.quantile(0.95))
+        sum_df['Run Time 99th Percentile (hr)'] = sum_df.groupby(org_groups)['Run Time Median (hr)'].transform(lambda x: x.quantile(0.99))
+
+        sum_df = sum_df.groupby(org_groups).agg({
+            'Total CPU hours': 'sum',
+            'Total GPU hours': 'sum',
+            'Job Count': 'sum',
+            'Wait Time Median (hr)': 'median',
+            'Wait Time 95th Percentile (hr)': 'first',
+            'Wait Time 99th Percentile (hr)': 'first',
+            'Run Time Median (hr)': 'median',
+            'Run Time 95th Percentile (hr)': 'first',
+            'Run Time 99th Percentile (hr)': 'first'
+        }).reset_index()
         for f in filters:
                 print(f"Filtering by {f}")
-                sum_df = df.groupby(groups).sum().reset_index()
                 output_analysis_results(sum_df, groups, f, args)
 
 
