@@ -34,17 +34,31 @@ schools = {'AS': ['e0:as', 's0:as', 's1:as', 's3:as', 'arts', 'global public hea
 
 
 def lookup_school(df: pd.DataFrame) -> str:
-    depthit = (s for s in schools for entry in schools[s] if entry in df['Dept'].lower())
     try:
-        return next(depthit)
-    except:
-        affilhit = (s for s in schools for entry in schools[s] if entry in df['Affiliation'].lower())
-        try:
-            affil = next(affilhit)
-            return affil
-        except:
-            return 'OTHER'
-
+        dept = df['Dept'].lower()
+        for school, keywords in schools.items():
+            for keyword in keywords:
+                if keyword.startswith('e0:') and keyword in dept:
+                    return school  
+        for school, keywords in schools.items():
+            for keyword in keywords:
+                if keyword in dept:
+                    return school 
+    except KeyError:
+        pass
+    try:
+        affiliation = df['Affiliation'].lower()
+        for school, keywords in schools.items():
+            for keyword in keywords:
+                if keyword.startswith('e0:') and keyword in affiliation:
+                    return school  
+        for school, keywords in schools.items():
+            for keyword in keywords:
+                if keyword in affiliation:
+                    return school 
+    except KeyError:
+        pass
+    return 'OTHER'
 
 def main(uidfile, output_path):
     outputfile = os.path.join(output_path, f"Combined_{os.path.basename(uidfile)}")
