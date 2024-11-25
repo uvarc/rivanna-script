@@ -112,6 +112,7 @@ def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=
 
         usage_df = pd.read_csv(usage_file, delimiter="|")  
         usage_df = usage_df[~usage_df['start'].isnull()]
+        usage_df['partition'] = usage_df['partition'].fillna('(unknown)')
         usage_df = usage_df[~usage_df['partition'].str.contains(',')]
         usage_df['Total CPU hours'] = usage_df['cputimeraw'] / 3600
         usage_df['GPU devices'] = usage_df['alloctres'].str.extract(r'gres/gpu=(\d+)').fillna(0).astype(int)
