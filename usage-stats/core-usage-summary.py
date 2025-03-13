@@ -15,6 +15,8 @@ def init_parser() -> argparse.ArgumentParser:
                 description='Parses SLURM core hour usage, mam account and mam organization information to create Rivanna usage stats')
         parser.add_argument('-a', '--allocations', required=True, help='file with allocation information')
         parser.add_argument('-u', '--usage', required=True, help='file with core hour usage')
+        parser.add_argument('-u2', '--usage2', required=True, help='file with core hour usage')
+        parser.add_argument('-u3', '--usage3', required=True, help='file with core hour usage')
         parser.add_argument('-c', '--capacity', required=False, help='file with core and GPU device counts for each partition')
         parser.add_argument('-x', '--organizations', required=True, help='file with mam organization info')
         parser.add_argument('-o', '--output', required=True, help='output file')
@@ -100,7 +102,7 @@ def get_time_delta(df, col1, col2):
         return time_delta
 
 
-def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=['Allocation']) -> pd.DataFrame:
+def merge_data(usage_file, usage_file2, usage_file3, account_file, org_file, capacity_file, hours, groups=['Allocation']) -> pd.DataFrame:
         capacity_df = pd.read_csv(capacity_file, delimiter='|')
         capacity_df['GPU devices'] = capacity_df.apply(lambda row: gpu_devices(row), axis=1)  
         capacity_df = capacity_df.groupby(['PARTITION']).agg({"NODELIST": len, "CPUS": np.sum, "GPU devices": np.sum})
@@ -109,8 +111,16 @@ def merge_data(usage_file, account_file, org_file, capacity_file, hours, groups=
         cap_dict = capacity_df.to_dict('index')
         print(capacity_df)
         capacity_df.to_csv(f"{capacity_file[:-4]}-summary.csv")
-
-        usage_df = pd.read_csv(usage_file, delimiter="|")  
+        #usage_df = pd.read_csv(usage_file, delimiter="|")  
+        usage_df1 = pd.read_csv(usage_file, delimiter="|") 
+        usage_df2 = pd.read_csv(usage_file2)
+        usage_df3 = pd.read_csv(usage_file3)
+        # Concatenate column-wise
+        usage_df = pd.concat([usage_df1, usage_df2, usage_df3], axis=1)
+        os.remove(usage_file)
+        os.remove(usage_file2)
+        os.remove(usage_file3)
+        usage_df.to_csv(usage_file,index=False)
         usage_df = usage_df[~usage_df['start'].isnull()]
         usage_df['partition'] = usage_df['partition'].fillna('(unknown)')
         usage_df = usage_df[~usage_df['partition'].str.contains(',')]
