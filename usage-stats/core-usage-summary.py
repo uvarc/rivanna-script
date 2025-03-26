@@ -295,5 +295,5 @@ if __name__ == '__main__':
         filters = parse_filter(args.filter)
         agroups, analysis = prepare_analysis_groups(args)
         hours = float(args.days) * 24
-        df = merge_data(args.usage, args.allocations, args.organizations, args.capacity, hours, groups=agroups)
+        df = merge_data(args.usage, args.usage2, args.usage3, args.allocations, args.organizations, args.capacity, hours, groups=agroups)
         perform_analysis(df, analysis, filters, args)
