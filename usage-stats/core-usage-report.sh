@@ -13,6 +13,7 @@ OUT_FILE=$3
 DAYS=$4
 FILTER=$5
 OUTPUTPATH="$6"
+mkdir -p $OUTPUTPATH
 
 YYYYMM=`echo $START | cut -c1-7`
 STATES="CANCELLED,COMPLETED,FAILED,NODE_FAIL,PREEMPTED,TIMEOUT,OUT_OF_MEMORY"
@@ -52,7 +53,7 @@ sinfo -N --format="%R|%N|%T|%c|%G" > $CAPACITY_FILE
 
 sudo /opt/mam/current/bin/mam-list-accounts > $ALLOC_FILE
 /opt/mam/current/bin/mam-list-organizations > $ORG_FILE
-refactor-orgfile.py $ORG_FILE 
+python refactor-orgfile.py $ORG_FILE 
 
 sed -i 's/Health_Volunteer Volunteer sponsored/Health_Volunteer_Volunteer_sponsored/g' $ALLOC_FILE
 sed -i 's/Health_Volunteer Volunteer sponsored/Health_Volunteer_Volunteer_sponsored/g' $ORG_FILE
