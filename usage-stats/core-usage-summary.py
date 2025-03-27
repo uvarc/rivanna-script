@@ -111,15 +111,23 @@ def merge_data(usage_file, usage_file2, usage_file3, account_file, org_file, cap
         cap_dict = capacity_df.to_dict('index')
         print(capacity_df)
         capacity_df.to_csv(f"{capacity_file[:-4]}-summary.csv")
-        #usage_df = pd.read_csv(usage_file, delimiter="|")  
-        usage_df1 = pd.read_csv(usage_file, delimiter="|") 
-        usage_df2 = pd.read_csv(usage_file2)
-        usage_df3 = pd.read_csv(usage_file3)
-        # Concatenate column-wise
-        usage_df = pd.concat([usage_df1, usage_df2, usage_df3], axis=1)
-        os.remove(usage_file)
-        os.remove(usage_file2)
-        os.remove(usage_file3)
+        # Creating different methods to read (and combine if necessary) the usage file(s) based on script usage (core-usage-report.sh vs reproccess.sh)
+        try:    # read as pipe delimited
+                usage_df = pd.read_csv(usage_file, delimiter="|") 
+        except Exception:
+                # read as csv
+                usage_df = pd.read_csv(usage_file) 
+        try:    # Concatenate column-wise
+                usage_df2 = pd.read_csv(usage_file2)
+                usage_df3 = pd.read_csv(usage_file3)
+                usage_df = pd.concat([usage_df, usage_df2, usage_df3], axis=1)
+                os.remove(usage_file)
+                os.remove(usage_file2)
+                os.remove(usage_file3)
+        except Exception as e: 
+                print(e)
+                print("Couldn't find usage_file2 and usage_file3 - proceeding assuming user is running reproccess.sh")
+        
         usage_df.to_csv(usage_file,index=False)
         usage_df = usage_df[~usage_df['start'].isnull()]
         usage_df['partition'] = usage_df['partition'].fillna('(unknown)')
