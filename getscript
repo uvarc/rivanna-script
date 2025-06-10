@@ -1,0 +1,11 @@
+#!/bin/bash
+# given a running job ID, print its Slurm script
+if [ $# -ne 1 ]; then
+    echo "Usage: `basename $0` JOBID"
+    exit 1
+fi
+JOBID=$1
+set -e
+set -o pipefail
+USERNAME=$(scontrol show job $JOBID|awk -F'[=(]' '/UserId/{print $2}')
+sudo -i -u $USERNAME scontrol write batch_script $JOBID -
