@@ -30,10 +30,10 @@ if [[ ! "$DIR" =~ "/home/$USERNAME/ondemand".* ]]; then
 fi
 
 # check if connection.yml exists
-if [ ! -e $DIR/connection.yml ]; then
-    echo "connection.yml not found. Perhaps connection not yet established."
-    exit 1
-fi
+#if [ ! -e $DIR/connection.yml ]; then
+    #echo "connection.yml not found. Perhaps connection not yet established."
+    #exit 1
+#fi
 
 # assign variables host, port, password, websocket
 eval "$(sudo -i -u $USERNAME cat $DIR/connection.yml | sed 's/: /=/g')"
