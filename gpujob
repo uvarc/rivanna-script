@@ -4,16 +4,29 @@
 # 2025-08-11
 
 function getjobs {
-    squeue -u $1 -ho "%10A %20P" -t R|awk '$2 ~ /gpu-*/ {print $1}'
+    # arg1: [u]ser/[j]ob
+    # arg2: ID
+    case $1 in
+    u)
+        squeue -u $2 -ho "%10A %20N %20P" -t R|awk '$3 ~ /gpu-*/ {print $1, $2}'
+        ;;
+    j)
+        squeue -j $2 -ho "%10A %20N"
+        ;;
+    *)
+        echo "Unknown type"
+        exit 1
+        ;;
+    esac
 }
 
 case $# in
 0)
-    JOBID=( $(getjobs $USER) )
+    JOBS=$(getjobs u $USER)
     ;;
 1)
     if [[ $1 =~ ^[0-9]*$ ]]; then
-        JOBID=($1)
+        JOBS=$(getjobs j $1)
         if ! sacct -j $1 &>/dev/null; then
             echo "Invalid job $1"
             exit 1
@@ -24,7 +37,7 @@ case $# in
             exit 1
         fi
         # get job IDs for running gpu jobs only
-        JOBID=( $(getjobs $1) )
+        JOBS=$(getjobs u $1)
     fi
     ;;
 *)    
@@ -34,6 +47,9 @@ case $# in
     ;;
 esac
 
+JOBID=( $(echo "$JOBS"|awk '{print $1}') )
+NODE=( $(echo "$JOBS"|awk '{print $2}') )
+
 if [ ${#JOBID[@]} -eq 0 ]; then
     echo "No jobs found"
     exit
@@ -41,7 +57,7 @@ fi
 
 module purge
 ml jobstats parallel || exit 1
-printf "%-9s%5s %8s %15s\n" "JobID" "Index" "GPU util" "GPU memory"
+printf "%9s %12s %5s %8s %15s\n" "JobID" "Node" "Index" "GPU util" "GPU memory"
 
 function printgpu {
     set -o pipefail
@@ -50,11 +66,11 @@ function printgpu {
         echo "$JOBSTATS" |\
         awk '/\(GPU/ {gsub(/\):/,"");print $3,$4}' |\
         pr -2 -t |\
-        awk -v j=$1 '{printf "%-9s%5s %8s %15s\n",j,$1,$2,$4}'
+        awk -v j=$1 -v n=$2 '{printf "%9s %12s %5s %8s %15s\n",j,n,$1,$2,$4}'
     else
         echo "(error)"
     fi
 }
 export -f printgpu
 
-parallel printgpu ::: ${JOBID[@]} | sort -nk 1
+parallel printgpu ::: ${JOBID[@]} :::+ ${NODE[@]} | sort -nk 1
