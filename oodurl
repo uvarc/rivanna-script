@@ -4,7 +4,7 @@ if [ $# -ne 1 ]; then
     echo "Usage: `basename $0` JobID"
     exit 1
 fi
-URLPREFIX="https://rivanna-portal.hpc.virginia.edu"
+URLPREFIX="https://ood.hpc.virginia.edu"
 VNC="1.3.0"
 
 function unsupported {
@@ -29,12 +29,6 @@ if [[ ! "$DIR" =~ "/home/$USERNAME/ondemand".* ]]; then
     exit 1
 fi
 
-# check if connection.yml exists
-#if [ ! -e $DIR/connection.yml ]; then
-    #echo "connection.yml not found. Perhaps connection not yet established."
-    #exit 1
-#fi
-
 # assign variables host, port, password, websocket
 eval "$(sudo -i -u $USERNAME cat $DIR/connection.yml | sed 's/: /=/g')"
 
@@ -51,7 +45,7 @@ eval "$(sudo -i -u $USERNAME cat $DIR/connection.yml | sed 's/: /=/g')"
     exit 1
 }
 
-APP=$(basename $(realpath $DIR/../..))
+APP=$(echo $DIR|awk -F/ '{print $(NF-2)}')
 
 case $APP in
 jupyter_lab)
