@@ -3,27 +3,43 @@
 # Ruoshi Sun
 # 2025-08-11
 
-if [ $# -ne 1 ]; then
-    echo "Usage: `basename $0` ID"
-    echo "where ID can be job ID or computing ID"
+function getjobs {
+    squeue -u $1 -ho "%10A %20P" -t R|awk '$2 ~ /gpu-*/ {print $1}'
+}
+
+case $# in
+0)
+    JOBID=( $(getjobs $USER) )
+    ;;
+1)
+    if [[ $1 =~ ^[0-9]*$ ]]; then
+        JOBID=($1)
+        if ! sacct -j $1 &>/dev/null; then
+            echo "Invalid job $1"
+            exit 1
+        fi
+    else
+        if ! id $1 &>/dev/null; then
+            echo "Invalid user $1"
+            exit 1
+        fi
+        # get job IDs for running gpu jobs only
+        JOBID=( $(getjobs $1) )
+    fi
+    ;;
+*)    
+    echo "Usage: `basename $0` [ID]"
+    echo "where ID can be computing ID or job ID."
+    echo "If no arguments, it will use your computing ID."
     exit 1
+    ;;
+esac
+
+if [ ${#JOBID[@]} -eq 0 ]; then
+    echo "No jobs found"
+    exit
 fi
 
-if [[ $1 =~ ^[0-9]*$ ]]; then
-    JOBID=($1)
-    if ! sacct -j $1 &>/dev/null; then
-        echo "Invalid job $1"
-        exit 1
-    fi
-else
-    if ! id $1 &>/dev/null; then
-        echo "Invalid user $1"
-        exit 1
-    fi
-# get job IDs for running gpu jobs only
-    JOBID=$(squeue -u $1 -ho "%10A %20P" -t R|awk '$2 ~ /gpu-*/ {print $1}')
-fi
-    
 module purge
 ml jobstats parallel
 printf "%-9s%5s %8s %15s\n" JobID Index "GPU util" "GPU memory"
@@ -32,9 +48,9 @@ function printgpu {
     set -o pipefail
     JOBSTATS=$(jobstats -s $1 2>/dev/null)
     if [ $? -eq 0 ]; then
-        echo "$JOBSTATS"|\
-        awk '/\(GPU/ {gsub(/\):/,"");print $3,$4}'|\
-        pr -2 -t|\
+        echo "$JOBSTATS" |\
+        awk '/\(GPU/ {gsub(/\):/,"");print $3,$4}' |\
+        pr -2 -t |\
         awk -v j=$1 '{printf "%-9s%5s %8s %15s\n",j,$1,$2,$4}'
     else
         echo "(error)"
