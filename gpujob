@@ -28,9 +28,8 @@ case $# in
     fi
     ;;
 *)    
-    echo "Usage: `basename $0` [ID]"
-    echo "where ID can be computing ID or job ID."
-    echo "If no arguments, it will use your computing ID."
+    echo "Usage: `basename $0`       - GPU statistics of all your running gpu jobs"
+    echo "       `basename $0` JobID - GPU statistics of a given job ID"
     exit 1
     ;;
 esac
@@ -41,8 +40,8 @@ if [ ${#JOBID[@]} -eq 0 ]; then
 fi
 
 module purge
-ml jobstats parallel
-printf "%-9s%5s %8s %15s\n" JobID Index "GPU util" "GPU memory"
+ml jobstats parallel || exit 1
+printf "%-9s%5s %8s %15s\n" "JobID" "Index" "GPU util" "GPU memory"
 
 function printgpu {
     set -o pipefail
