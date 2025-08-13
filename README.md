@@ -5,6 +5,7 @@ Miscellaneous scripts for Rivanna
 - `alias2id` - Get user ID from alias
 - `cleancache` - Remove cache files
 - `gitall` - Shortcut for add-commit-push
+- `gpujob` - GPU statistics
 - `jkrollout` - Install custom Jupyter kernel for a container
 - `list-group-usage` - List SU usage for each group member
 - `list-storage` - List storage usage by school and department
