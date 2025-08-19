@@ -1,4 +1,6 @@
 #!/bin/bash
+# gpu overcommit checker
+#
 # nvidia-smi output:
 #
 # ...
